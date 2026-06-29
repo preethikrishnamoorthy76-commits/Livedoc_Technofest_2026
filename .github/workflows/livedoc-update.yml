@@ -1,0 +1,17 @@
+name: LiveDoc Update
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  notify-livedoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger LiveDoc Backend
+        run: |
+          curl -X POST https://multidirectional-darrick-unfraternized.ngrok-free.dev/api/trigger-update \
+          -H "Content-Type: application/json" \
+          -d '{"repo_urls": ["${{ github.server_url }}/${{ github.repository }}"], "api_key": "${{ secrets.LIVEDOC_API_KEY }}"}'
