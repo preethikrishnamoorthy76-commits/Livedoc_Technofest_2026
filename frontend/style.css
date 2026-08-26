@@ -1,0 +1,483 @@
+/* Google Fonts: Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --border-color: #cbd5e1;
+  --error-color: #ef4444;
+  --focus-ring: rgba(37, 99, 235, 0.2);
+  --border-radius: 12px;
+  --transition-speed: 0.2s;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header slightly detached from the main card */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  padding: 30px 15px 15px;
+  position: relative;
+}
+
+.header .material-symbols-outlined {
+    position: absolute;
+    left: 20px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color var(--transition-speed);
+}
+
+.header .material-symbols-outlined:hover {
+    color: var(--text-main);
+}
+
+.header h2 {
+  text-align: center;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-main);
+}
+
+/* Main Container (Card format) */
+.container {
+  max-width: 440px;
+  width: 100%;
+  padding: 40px;
+  background: var(--card-bg);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.02);
+  margin-bottom: 40px;
+  box-sizing: border-box;
+}
+
+/* Hero Section / Decorative Element */
+.hero {
+  height: 140px;
+  border-radius: var(--border-radius);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero::after {
+    content: "✨";
+    font-size: 48px;
+    opacity: 0.8;
+}
+
+/* Title Section */
+.title-section {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.title-section h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-main);
+}
+
+.title-section p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* Form Styles */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+  color: var(--text-main);
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--border-radius);
+  border: 1.5px solid var(--border-color);
+  font-size: 15px;
+  transition: all var(--transition-speed);
+  box-sizing: border-box;
+  background: #fff;
+  font-family: 'Inter', sans-serif;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.input-group input::placeholder {
+    color: #94a3b8;
+}
+
+/* Password Input Specific */
+.password-box {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-speed);
+  background: #fff;
+  overflow: hidden; /* Contains the focus ring properly */
+}
+
+.password-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.password-box input {
+  border: none;
+  flex: 1;
+  padding: 14px 16px;
+  outline: none;
+  background: transparent;
+  box-shadow: none; /* Override general input focus */
+}
+
+.password-box input:focus {
+    box-shadow: none;
+}
+
+.password-box button {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-speed);
+}
+
+.password-box button:hover {
+    color: var(--text-main);
+}
+
+/* Forgot Password Link */
+.forgot {
+  text-align: right;
+  margin-top: 8px;
+}
+
+.forgot a {
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--transition-speed);
+}
+
+.forgot a:hover {
+  text-decoration: underline;
+  color: var(--primary-hover);
+}
+
+/* Buttons */
+.login-btn {
+  height: 52px;
+  background: var(--primary-color);
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background var(--transition-speed), transform 0.1s;
+  margin-top: 10px;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15);
+}
+
+.login-btn:hover {
+    background: var(--primary-hover);
+}
+
+.login-btn:active {
+    transform: scale(0.98);
+}
+
+.register-btn {
+  height: 52px;
+  background: white;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  font-family: 'Inter', sans-serif;
+}
+
+.register-btn:hover {
+    border-color: var(--text-muted);
+    background: var(--bg-color);
+}
+
+/* Footer / Terms */
+footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+footer a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 500;
+    transition: color var(--transition-speed);
+}
+
+footer a:hover {
+    color: var(--text-main);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .container {
+        padding: 30px 20px;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        margin-bottom: 0;
+    }
+    body {
+        background: var(--card-bg); /* Make mobile full white */
+    }
+}
+
+/* Markdown & Technical Report Rendering Styles for Section Views */
+.section-view {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    color: var(--text-main);
+    line-height: 1.7;
+    font-size: 15px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.section-view h1,
+.section-view h2,
+.section-view h3,
+.section-view h4,
+.section-view h5,
+.section-view h6 {
+    text-align: left;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 14px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.section-view h1 { font-size: 22px; }
+.section-view h2 { font-size: 20px; }
+.section-view h3 { font-size: 17px; }
+.section-view h4 { font-size: 15px; }
+
+.section-view p {
+    margin-top: 0;
+    margin-bottom: 16px;
+    line-height: 1.7;
+    font-size: 15px;
+    text-align: left;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.section-view ul, .section-view ol {
+    margin-top: 0;
+    margin-bottom: 18px;
+    padding-left: 24px;
+    line-height: 1.7;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.section-view li {
+    margin-bottom: 8px;
+}
+
+.section-view a {
+    color: var(--primary-color);
+    text-decoration: none;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
+
+.section-view a:hover {
+    text-decoration: underline;
+}
+
+/* --- Technical AI Reports & Cards Layout --- */
+.ai-technical-report {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* --- Clean Table Alignment & Layout Rules --- */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0 28px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: white;
+}
+
+.section-view table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    text-align: left;
+    margin: 0;
+}
+
+.section-view th {
+    background: #f1f5f9;
+    color: var(--text-main);
+    font-weight: 600;
+    padding: 12px 14px;
+    border-bottom: 2px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.section-view th:last-child {
+    border-right: none;
+}
+
+.section-view td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    vertical-align: top;
+    line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.section-view td:last-child {
+    border-right: none;
+}
+
+.section-view tr:last-child td {
+    border-bottom: none;
+}
+
+.section-view tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+/* --- Code & Pre Blocks --- */
+.section-view code {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: var(--secondary-color);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--primary-hover);
+    word-break: break-word;
+}
+
+.section-view pre {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.section-view pre code {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: 14px;
+    word-break: normal;
+}
+
+/* Print/PDF Export Specific Styles to Prevent Awkward Page Breaks */
+@media print {
+    #resultsArea {
+        font-size: 14pt; /* Slightly larger base font for better print readability */
+        line-height: 1.5;
+    }
+
+    #resultsArea h1, 
+    #resultsArea h2, 
+    #resultsArea h3 {
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    #resultsArea p, 
+    #resultsArea pre, 
+    #resultsArea ul, 
+    #resultsArea ol,
+    .mermaid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+}

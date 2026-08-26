@@ -1,0 +1,367 @@
+PROJECT SUMMARY – LIVE DOC MULTI-TENANT AI DOCUMENTATION PLATFORM
+
+1. HIGH-LEVEL OVERVIEW
+
+This project is a multi-tenant SaaS platform that analyzes GitHub repositories and automatically generates documentation, summaries, and architectural insights using Google Gemini. It consists of a FastAPI backend, a static HTML/JS frontend, and MongoDB as the main data store (accessed asynchronously via Motor). The system is multi-tenant: each authenticated user belongs to a logically isolated tenant, identified by a tenant_id that is embedded in JWT tokens and propagated through middleware into every request and database query.
+
+At a high level, users interact with the web UI, sign up or log in with an email and password, paste a GitHub repository URL, and then trigger various analyses (documentation generation, commit history summary, secure analysis, etc.). The backend fetches data from the GitHub REST API, computes or requests AI-powered summaries from Gemini, and stores only high-level metadata and analysis results in MongoDB, never raw source code. All stored data is always associated with a tenant_id to guarantee tenant isolation.
+
+
+2. TECH STACK
+
+Backend:
+- Language: Python
+- Framework: FastAPI
+- ASGI server: Uvicorn
+- Database: MongoDB
+- MongoDB driver: Motor (AsyncIOMotorClient)
+- Auth and security:
+  - JWT via python-jose[cryptography]
+  - Password hashing via passlib[bcrypt]
+- HTTP client to external APIs: httpx (used for GitHub REST API calls)
+- AI provider: Google Gemini (google-generativeai), specifically models/gemini-2.5-flash
+- Configuration: python-dotenv for environment variables
+
+Frontend:
+- Static single-page UI: index.html, script.js, style.css
+- Styling: Custom CSS, Inter font, dark theme
+- Markdown rendering: marked.js
+- Diagrams: mermaid.js
+- Communication with backend: fetch API (browser) using JSON, plus Authorization headers for JWT
+
+Infrastructure / Environment:
+- MongoDB URI and DB name controlled via environment variables (MONGODB_URI, MONGODB_DB)
+- JWT secret and expiration controlled via environment variables (JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES)
+
+
+3. BACKEND ARCHITECTURE AND MODULES
+
+Core application entrypoint: backend/main.py
+- Creates the FastAPI application with CORS enabled so the frontend can call it from localhost.
+- Loads environment variables via dotenv.
+- Registers global middleware (TenantMiddleware) for JWT validation and tenant extraction.
+- Includes multiple routers:
+  - auth router (register/login)
+  - repositories router (/analyze-repo)
+  - analysis_results router (/analysis/{repo_id})
+  - secure_analysis router (/secure-analyze)
+- Initializes service classes:
+  - GitHubService (GitHub API integration)
+  - ParserService (static code parsing for the original documentation flow)
+  - AIService (Gemini integration for documentation and structured analysis)
+- Exposes legacy endpoints:
+  - POST /analyze – original analysis and documentation generation using AST parsing + Gemini Markdown generation
+  - POST /commit-history – fetches and summarizes the commit history using Gemini
+
+Configuration and database access: backend/config.py and backend/db.py
+- config.py:
+  - Loads environment variables.
+  - Provides constants:
+    - MONGODB_URI (default mongodb://localhost:27017)
+    - MONGODB_DB (default livedoc)
+    - JWT_SECRET_KEY (default placeholder string, should be overridden in .env)
+    - JWT_ALGORITHM (HS256)
+    - ACCESS_TOKEN_EXPIRE_MINUTES (default 60)
+- db.py:
+  - Creates a single, lazily initialized AsyncIOMotorClient using MONGODB_URI.
+  - Exposes helper functions that return specific collections:
+    - get_users_collection() → "users" collection
+    - get_repositories_collection() → "repositories" collection
+    - get_analysis_results_collection() → "analysis_results" collection
+  - All higher-level code uses these helpers instead of talking directly to the client.
+
+
+4. MULTI-TENANT AUTHENTICATION AND SECURITY
+
+JWT-based authentication and user model: backend/auth.py
+- Uses Pydantic models for requests and responses:
+  - RegisterRequest: { email: EmailStr, password: str }
+  - LoginRequest: { email: EmailStr, password: str }
+  - TokenResponse: { access_token: str, token_type: "bearer" }
+- Password handling:
+  - Passwords are hashed using Passlib with bcrypt.
+  - Stored in MongoDB as password_hash, never in plaintext.
+- tenant_id:
+  - On registration, each new user is given a unique tenant_id (UUID string).
+  - User document structure in "users" collection:
+    {
+      _id: ObjectId,
+      email: string,
+      password_hash: string,
+      tenant_id: string (UUID),
+      created_at: datetime (UTC)
+    }
+- JWT tokens:
+  - On register or login, the backend issues a JWT with claims:
+    - sub: user email
+    - tenant_id: the tenant UUID associated with that user
+    - exp: expiration based on ACCESS_TOKEN_EXPIRE_MINUTES
+  - Tokens are signed using JWT_SECRET_KEY and JWT_ALGORITHM.
+
+Tenant middleware: backend/middleware.py
+- Implements TenantMiddleware based on Starlette’s BaseHTTPMiddleware.
+- Responsibilities:
+  - For each request, validate the JWT (except for a small set of public paths: /, /register, /login).
+  - On non-public paths:
+    - Require an Authorization: Bearer <token> header.
+    - Decode the token using JWT_SECRET_KEY and JWT_ALGORITHM.
+    - If the token is invalid, expired, or missing tenant_id, return a 401 response.
+  - On success:
+    - Attach the tenant_id from the token to request.state.tenant_id.
+- This ensures every protected endpoint has easy access to the current tenant_id and can strictly scope all queries.
+
+Tenant isolation rules:
+- Every collection that stores tenant-specific data (users implicitly, repositories, analysis_results) includes tenant_id.
+- All queries in new tenant-aware endpoints are written to always filter by tenant_id, e.g.:
+  - { "tenant_id": request.state.tenant_id, ... }
+- This guarantees that a user cannot access or manipulate another tenant’s data as long as queries follow this pattern.
+
+
+5. REPOSITORY METADATA AND ANALYSIS STORAGE
+
+Repositories collection: backend/repositories.py and db.py
+- Collection: "repositories"
+- Document structure:
+  {
+    _id: ObjectId,
+    tenant_id: string,
+    repo_url: string,
+    owner: string,
+    repo_name: string,
+    created_at: datetime
+  }
+- Endpoint: POST /analyze-repo
+  - Request body: { repo_url: HttpUrl }
+  - Logic:
+    1. Read tenant_id from request.state.tenant_id (set by TenantMiddleware). If missing, return 401.
+    2. Parse owner and repo_name from the GitHub URL using GitHubService._parse_repo_url.
+    3. Insert a new document into the repositories collection:
+       - tenant_id = current tenant
+       - repo_url, owner, repo_name
+       - created_at = now
+    4. Return a response with the inserted id and the stored metadata.
+- This endpoint ensures every saved repository is tenant-scoped.
+
+Analysis results collection: backend/analysis_results.py
+- Collection: "analysis_results"
+- Document structure:
+  {
+    _id: ObjectId,
+    tenant_id: string,
+    repo_id: string (repository_id),
+    project_overview: string,
+    architecture_flow: string,
+    dependency_graph: string (Mermaid graph),
+    commit_summary: string,
+    risk_analysis: [string, ...],
+    created_at: datetime
+  }
+- Pydantic model: AnalysisResult, which exposes _id as id (string) for HTTP responses.
+- Endpoint: GET /analysis/{repo_id}
+  - Validates tenant_id from request.state.
+  - Queries analysis_results with filter { tenant_id: current_tenant, repo_id: provided_repo_id }.
+  - Returns a list of documents for that tenant and repo.
+- This endpoint enforces that tenants only see their own analysis documents.
+
+
+6. SECURE GITHUB ANALYSIS SERVICE
+
+GitHub integration: backend/services/github_service.py
+- Uses httpx with a GitHub personal access token (GITHUB_API_KEY) if configured.
+- Supports:
+  - _parse_repo_url(repo_url) → (owner, repo)
+  - fetch_repo_contents(repo_url) → list of file metadata at the root
+  - fetch_recent_commits(repo_url)
+  - fetch_all_commits(repo_url, per_page, max_pages)
+- Only metadata is used in the secure endpoints; raw file contents are not stored where security requires it.
+
+Secure analysis endpoint: backend/secure_analysis.py
+- Endpoint: POST /secure-analyze
+- Request: { repo_url: HttpUrl }
+- Behavior:
+  1. Authenticate via TenantMiddleware; obtain tenant_id from request.state.
+  2. Parse owner and repo_name using GitHubService._parse_repo_url.
+  3. Fetch repository structure using fetch_repo_contents(repo_url) – this returns metadata about files.
+  4. Fetch a sampled commit history using fetch_all_commits(repo_url, per_page=50, max_pages=1).
+  5. Derive simple metrics:
+     - file_count
+     - total_commits
+     - latest commit date and message
+  6. Build purely textual summaries:
+     - project_overview – high-level description of repo activity and size.
+     - architecture_flow – brief explanation that analysis is high-level and code contents are not stored.
+     - commit_summary – string summarizing total commits and latest commit info.
+     - risk_analysis – array of strings with simple heuristics (e.g., low commit activity, empty repo, no supported files).
+     - dependency_graph – a small Mermaid graph showing relationships between repo, files, and commits.
+  7. Ensure the repositories collection has a record for this tenant and repo_url; insert one if needed and obtain repo_id.
+  8. Insert a document into analysis_results with the above fields plus tenant_id, repo_id, and created_at.
+  9. Return a response containing the saved analysis result (id, tenant_id, repo_id, and generated fields).
+
+Security guarantees:
+- Raw source code is not stored by this secure path.
+- Only high-level metadata and textual summaries are persisted.
+- All stored records are tenant-scoped via tenant_id.
+
+
+7. AI DOCUMENTATION AGENT (GEMINI INTEGRATION)
+
+AI service: backend/services/ai_service.py
+- Uses google-generativeai with an API key (GEMINI_API_KEY) to create a GenerativeModel instance for models/gemini-2.5-flash.
+- Two main responsibilities:
+  1. Legacy documentation generation (generate_documentation):
+     - Takes codebase_analysis (class/function lists plus raw code snippet) and repo_url.
+     - Builds a long Markdown prompt that includes raw code snippets (used in the earlier, non-secure flow).
+     - Asks Gemini to generate a full Markdown README with two Mermaid diagrams (architecture and request lifecycle).
+  2. New structured analysis generation (generate_structured_analysis):
+     - Designed for the secure, metadata-only flow.
+     - Signature:
+       generate_structured_analysis(repo_url, repository_structure, commit_history_summary=None)
+     - repository_structure is a list of metadata objects about files/components and dependencies. It SHOULD NOT contain raw code; only names, roles, relationships, etc.
+     - commit_history_summary is an optional high-level text summary of commit history.
+     - The method:
+       - Serializes repository_structure to JSON.
+       - Sends a carefully constrained prompt to Gemini asking for a single JSON object with these keys:
+         - project_overview (string)
+         - architecture_explanation (string)
+         - dependency_graph_mermaid (string, valid Mermaid syntax)
+         - commit_history_summary (string)
+         - architecture_risk_analysis (array of strings)
+       - Explicitly forbids Markdown fences or extraneous text around the JSON.
+       - Attempts to parse the response as JSON, with a small fallback for accidental code fences.
+       - Validates that all expected keys are present.
+       - Returns the parsed dict so that callers can store it directly in MongoDB or combine it with other data.
+
+Key security constraint:
+- generate_structured_analysis is built around the requirement that we must NOT send full repository code to the AI. Only summarized metadata is used.
+
+
+8. FRONTEND APPLICATION AND FLOWS
+
+Frontend layout: frontend/index.html and style.css
+- A dark-themed single-page application with two main regions:
+  - Left sidebar:
+    - Logo and app name.
+    - Authentication section:
+      - Email and password inputs.
+      - Login and Register buttons.
+      - Status text showing current auth state.
+    - Repository input section:
+      - Text field for GitHub repository URL.
+      - Generate Docs button (calls /analyze).
+      - Commit History Summary button (calls /commit-history).
+  - Main content area:
+    - Top navigation bar with page title and a status indicator.
+    - Viewer area where Markdown, commit history, or error views are rendered.
+
+Frontend behavior: frontend/script.js
+- Initializes Mermaid with a dark theme and configures marked.js for Markdown.
+- Authentication handling:
+  - Maintains auth state in localStorage:
+    - livedoc_jwt_token
+    - livedoc_user_email
+  - Provides helpers to get/save/clear auth and to update the auth status label.
+  - Login button:
+    - Sends POST /login with { email, password }.
+    - On success, stores the JWT and email, updates status to "Logged in".
+  - Register button:
+    - Sends POST /register with { email, password }.
+    - On success, stores JWT and email, status "Registered and logged in".
+  - Error handling:
+    - If login/register fails, shows the error message in the status label and clears any stored auth.
+
+- Protected actions:
+  - Generate Docs (Analyze button):
+    - Requires a JWT in localStorage; if missing, shows a "Login required" message.
+    - On call, sends POST /analyze with JSON body { repo_url } and Authorization: Bearer <token>.
+    - Handles 401 by clearing auth and asking the user to log in again.
+    - On success, takes resData.data.markdown and renders it using marked.js, with special handling for Mermaid blocks.
+  - Commit History Summary button:
+    - Also requires JWT; otherwise shows "Login required".
+    - Sends POST /commit-history with Authorization header.
+    - On success, renders a commit summary view with a summary plus timeline list.
+
+- Markdown and Mermaid handling:
+  - marked.js renderer is extended so that ```mermaid code blocks become <div class="mermaid"> elements.
+  - After rendering, a small sanitizer function strips any non-Mermaid text from the beginning of Mermaid blocks, to avoid syntax errors even if the AI adds extra prose.
+  - mermaid.init is then called on all .mermaid elements to render diagrams.
+
+This frontend never interacts directly with MongoDB. It only talks to the FastAPI backend, which in turn talks to MongoDB using the configured URI.
+
+
+9. END-TO-END REQUEST FLOWS
+
+User registration and login:
+1. User opens the frontend, enters an email and password.
+2. Clicks Register:
+   - Browser sends POST /register to backend with { email, password }.
+   - Backend:
+     - Hashes password.
+     - Creates a user in MongoDB with tenant_id = UUID.
+     - Issues a JWT with tenant_id and email.
+   - Frontend:
+     - Stores access_token and email in localStorage.
+     - Updates auth status to "Registered and logged in".
+
+3. Subsequent visits:
+   - Frontend reads token and email from localStorage and shows "Logged in as ...".
+
+Repository registration (metadata only):
+1. User logs in and enters a GitHub URL, then calls POST /analyze-repo (could be triggered from a UI extension).
+2. Backend:
+   - TenantMiddleware validates JWT and sets request.state.tenant_id.
+   - repositories router parses owner and repo_name.
+   - Inserts a document into the repositories collection with tenant_id, repo_url, owner, repo_name.
+
+Secure analysis flow (no raw code persistence):
+1. User logs in and triggers POST /secure-analyze with { repo_url }.
+2. Backend:
+   - TenantMiddleware ensures valid JWT and obtains tenant_id.
+   - secure_analysis router:
+     - Uses GitHubService to fetch file metadata and commit history.
+     - Builds safe, high-level summaries and heuristics.
+     - Ensures corresponding repository document exists and derives repo_id.
+     - Inserts a new analysis_results document with fields such as project_overview, architecture_flow, dependency_graph, commit_summary, risk_analysis.
+   - Returns an object with the new analysis id and fields.
+
+Retrieving analysis:
+1. Frontend (or another client) calls GET /analysis/{repo_id} with Authorization header.
+2. Backend:
+   - TenantMiddleware validates JWT and sets tenant_id.
+   - analysis_results router queries analysis_results with filter { tenant_id: current_tenant, repo_id: repo_id }.
+   - Returns only that tenant’s analyses for the given repo.
+
+Legacy analyze flow:
+1. User triggers POST /analyze using the UI.
+2. Backend uses GitHubService and ParserService to fetch files, parse ASTs, and feed code snippets to Gemini.
+3. AIService.generate_documentation produces a full Markdown README with two Mermaid diagrams.
+4. Frontend displays the resulting Markdown.
+
+
+10. CONFIGURATION AND RUN INSTRUCTIONS (SUMMARY)
+
+Backend:
+- Create a .env file in the backend directory with at least:
+  - MONGODB_URI=your_mongodb_uri
+  - MONGODB_DB=livedoc
+  - JWT_SECRET_KEY=your_long_random_secret
+  - GEMINI_API_KEY=your_gemini_api_key
+  - GITHUB_API_KEY=your_github_personal_access_token (optional but recommended)
+- Install Python dependencies from backend/requirements.txt.
+- Start the app from the backend directory:
+  - uvicorn main:app --reload
+
+Frontend:
+- Open frontend/index.html in a browser (or serve via a simple static server).
+- Ensure API_BASE_URL in script.js points to the backend (http://localhost:8000 in development).
+
+
+11. FUTURE EXTENSIONS
+
+The current architecture is already structured for growth. Possible next steps include:
+- Wiring the secure_analysis flow to use AIService.generate_structured_analysis so that Gemini returns fully structured JSON fields used directly by analysis_results.
+- Building a repository list UI in the frontend to show a tenant’s saved repositories and allow clicking into their existing analyses.
+- Adding a logout button to clear JWT and email from localStorage.
+- Adding role-based authorization (e.g., admin tenants) on top of the existing tenant isolation.
+- Expanding repository traversal beyond root-level files using the GitHub Trees API while still preserving the “no raw code stored” guarantee in secure flows.
+
+Overall, the system now consists of a multi-tenant, JWT-secured FastAPI backend using MongoDB for persistence, a GitHub integration for repository and commit metadata, a Gemini-based AI agent for documentation and architectural analysis, and a browser-based frontend that authenticates users and visualizes Markdown and Mermaid diagrams generated by the backend and AI services.

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveDoc AI - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+</head>
+<body style="background: var(--bg-color); min-height: 100vh; margin: 0; padding: 0;">
+
+    <!-- Dashboard Sidebar -->
+    <aside style="width: 280px; background: white; border-right: 1px solid var(--border-color); height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; box-sizing: border-box;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 40px; color: var(--primary-color);">
+            <span class="material-symbols-outlined" style="font-size: 28px;">auto_awesome</span>
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700;">LiveDoc AI</h2>
+        </div>
+
+        <nav style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="#" id="dashboardNavBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; background: var(--bg-color); color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="#" id="architectureDiffBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">account_tree</span>
+                Architecture Drift
+            </a>
+            <a href="#" id="repoHealthBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">monitor_heart</span>
+                Repo Health
+            </a>
+            <a href="#" id="securityRiskBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">security</span>
+                Security Risk
+            </a>
+            <a href="#" id="commitHistoryBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">history</span>
+                Commit History
+            </a>
+            <a href="#" id="logoutBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--error-color); text-decoration: none; font-weight: 500; transition: all 0.2s; margin-top: auto; position: absolute; bottom: 20px; width: calc(100% - 40px); box-sizing: border-box;">
+                <span class="material-symbols-outlined">logout</span>
+                Sign Out
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Dashboard Content -->
+    <main style="margin-left: 280px; padding: 40px; box-sizing: border-box;">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <div>
+                <h1 style="margin: 0 0 5px; font-size: 24px; color: var(--text-main);">Analyze Repository</h1>
+                <p style="margin: 0; color: var(--text-muted); font-size: 15px;">Generate documentation from any public GitHub repository.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; background: white; padding: 8px 16px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border-color);">
+                <span class="material-symbols-outlined" style="color: var(--text-muted); font-size: 20px;">account_circle</span>
+                <span id="userEmailDisplay" style="font-size: 14px; font-weight: 500; color: var(--text-main);">user@example.com</span>
+            </div>
+        </header>
+
+        <!-- Analyze Tool Container -->
+        <div style="background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color); max-width: 980px;">
+            <div class="input-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; color: var(--text-main); margin-bottom: 10px; display: block;">GitHub Repository URLs (One per line)</label>
+                <div style="display: flex; gap: 10px; align-items: stretch;">
+                    <textarea id="repoUrlInput" placeholder="https://github.com/username/frontend-repo&#10;https://github.com/username/backend-repo" rows="3" style="flex: 1; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 15px; outline: none; font-family: 'Inter', sans-serif; resize: vertical; min-height: 80px;"></textarea>
+                    <button id="analyzeSubmitBtn" class="login-btn" style="margin-top: 0; padding: 0 30px; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 180px; height: auto;">
+                        <span class="material-symbols-outlined">auto_awesome_mosaic</span>
+                        Generate Docs
+                    </button>
+                </div>
+                <div id="invalidUrlWarning" style="display: none; margin-top: 12px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3b12; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.5;">
+                    <strong>Invalid URL found.</strong> Some entries were ignored because they are not valid GitHub repository links.
+                </div>
+                <div id="commitStatusBanner" style="display: none; margin-top: 12px; border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5;"></div>
+            </div>
+            
+            <div id="loadingState" style="display: none; text-align: center; padding: 40px 0;">
+                <span class="material-symbols-outlined" style="font-size: 40px; color: var(--primary-color); animation: spin 2s linear infinite;">sync</span>
+                <p style="color: var(--text-muted); margin-top: 15px; font-weight: 500;">Analyzing codebase... This may take a minute.</p>
+            </div>
+
+            <div id="viewsContainer" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <div id="view-dashboard" class="section-view" style="display: block;"></div>
+                <div id="view-architectureDiff" class="section-view" style="display: none;"></div>
+                <div id="view-repoHealth" class="section-view" style="display: none;"></div>
+                <div id="view-securityRisk" class="section-view" style="display: none;"></div>
+                <div id="view-commitHistory" class="section-view" style="display: none;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- Add html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        // Init Mermaid with suppressed automatic error rendering
+        try {
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'default',
+                suppressErrorRendering: true,
+                securityLevel: 'loose'
+            });
+        } catch (e) {
+            console.warn('Mermaid init warning:', e);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let token = localStorage.getItem('livedoc_jwt_token');
+            let email = localStorage.getItem('livedoc_user_email') || 'dev@livedoc.local';
+            
+            if (!token) {
+                token = 'local_session_token';
+                localStorage.setItem('livedoc_jwt_token', token);
+                localStorage.setItem('livedoc_user_email', email);
+            }
+
+            document.getElementById('userEmailDisplay').textContent = email;
+
+            // Handle Logout
+            document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('livedoc_jwt_token');
+                localStorage.removeItem('livedoc_user_email');
+                sessionStorage.removeItem('livedoc_dashboard_cache');
+                window.location.href = 'index.html';
+            });
+            
+            const dashboardNavBtn = document.getElementById('dashboardNavBtn');
+            const architectureDiffBtn = document.getElementById('architectureDiffBtn');
+            const repoHealthBtn = document.getElementById('repoHealthBtn');
+            const securityRiskBtn = document.getElementById('securityRiskBtn');
+            const commitHistoryBtn = document.getElementById('commitHistoryBtn');
+            const analyzeBtn = document.getElementById('analyzeSubmitBtn');
+            
+            const repoUrlInput = document.getElementById('repoUrlInput');
+            const loadingState = document.getElementById('loadingState');
+            const invalidUrlWarning = document.getElementById('invalidUrlWarning');
+            const commitStatusBanner = document.getElementById('commitStatusBanner');
+            const API_BASE_URL = 'http://127.0.0.1:8000';
+
+            // --- 5 Completely Independent Section Containers ---
+            const views = {
+                dashboard: document.getElementById('view-dashboard'),
+                architectureDiff: document.getElementById('view-architectureDiff'),
+                repoHealth: document.getElementById('view-repoHealth'),
+                securityRisk: document.getElementById('view-securityRisk'),
+                commitHistory: document.getElementById('view-commitHistory')
+            };
+
+            const navTabs = [
+                { id: 'dashboardNavBtn', key: 'dashboard', label: 'Dashboard' },
+                { id: 'architectureDiffBtn', key: 'architectureDiff', label: 'Architecture Drift' },
+                { id: 'repoHealthBtn', key: 'repoHealth', label: 'Repo Health' },
+                { id: 'securityRiskBtn', key: 'securityRisk', label: 'Security Risk' },
+                { id: 'commitHistoryBtn', key: 'commitHistory', label: 'Commit History' }
+            ];
+
+            // --- Isolated Section State Storage ---
+            let APP_STATE = {
+                activeSection: 'dashboard',
+                urlHash: '',
+                repoInputText: '',
+                sections: {
+                    dashboard: null,
+                    architectureDiff: null,
+                    repoHealth: null,
+                    securityRisk: null,
+                    commitHistory: null
+                }
+            };
+
+            // Restore state from sessionStorage
+            try {
+                const savedState = sessionStorage.getItem('livedoc_dashboard_cache');
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    if (parsed && parsed.sections) {
+                        APP_STATE = parsed;
+                        if (APP_STATE.repoInputText) {
+                            repoUrlInput.value = APP_STATE.repoInputText;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Session cache restore warning:', err);
+            }
+
+            function saveState() {
+                try {
+                    APP_STATE.repoInputText = repoUrlInput.value;
+                    sessionStorage.setItem('livedoc_dashboard_cache', JSON.stringify(APP_STATE));
+                } catch (err) {
+                    console.warn('Session cache save warning:', err);
+                }
+            }
+
+            function getUrlHash(validUrls) {
+                return (validUrls || []).slice().sort().join('|');
+            }
+
+            async function checkCommitStatus(validUrls) {
+                if (!commitStatusBanner || !validUrls.length) return;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/commit-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('livedoc_jwt_token')}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+                    if (!response.ok) throw new Error('Commit status request failed');
+                    const result = await response.json();
+                    const colors = {
+                        new_commit: ['#ecfdf5', '#86efac', '#166534'],
+                        unchanged: ['#f8fafc', 'var(--border-color)', 'var(--text-muted)'],
+                        no_commits: ['#f8fafc', 'var(--border-color)', 'var(--text-muted)'],
+                        no_baseline: ['#eff6ff', '#93c5fd', '#1d4ed8'],
+                        unavailable: ['#fff7ed', '#fdba74', '#9a3b12']
+                    };
+                    const [background, border, color] = colors[result.status] || colors.unavailable;
+                    commitStatusBanner.style.display = 'block';
+                    commitStatusBanner.style.background = background;
+                    commitStatusBanner.style.border = `1px solid ${border}`;
+                    commitStatusBanner.style.color = color;
+                    commitStatusBanner.innerHTML = `<strong>${result.message || 'Commit status unavailable.'}</strong>${result.status === 'new_commit' ? ' Click Regenerate to create updated documentation.' : ''}`;
+                } catch (error) {
+                    commitStatusBanner.style.display = 'none';
+                }
+            }
+
+            // --- Navigation Controller ---
+            function switchSection(targetKey) {
+                APP_STATE.activeSection = targetKey;
+                saveState();
+
+                // 1. Highlight Nav Link
+                navTabs.forEach(tab => {
+                    const el = document.getElementById(tab.id);
+                    if (!el) return;
+                    if (tab.key === targetKey) {
+                        el.style.background = 'var(--bg-color)';
+                        el.style.color = 'var(--primary-color)';
+                        el.style.fontWeight = '600';
+                    } else {
+                        el.style.background = 'transparent';
+                        el.style.color = 'var(--text-muted)';
+                        el.style.fontWeight = '500';
+                    }
+                });
+
+                // 2. Hide ALL non-active views & Show ONLY the active section view container
+                Object.keys(views).forEach(key => {
+                    if (views[key]) {
+                        views[key].style.display = (key === targetKey) ? 'block' : 'none';
+                    }
+                });
+
+                // 3. Render or prompt if section needs initial rendering
+                const currentHash = getUrlHash(parseRepoUrls(repoUrlInput.value.trim()).validUrls);
+                const sectionState = APP_STATE.sections[targetKey];
+
+                if (sectionState && sectionState.urlHash === currentHash) {
+                    // Cached data available for this section: ensure rendered
+                    if (targetKey === 'dashboard' && sectionState.markdown) {
+                        renderDashboardView(sectionState.markdown);
+                    } else if (targetKey === 'architectureDiff' && sectionState.data) {
+                        renderArchitectureDiffView(sectionState.data);
+                    } else if (targetKey === 'repoHealth' && sectionState.data) {
+                        renderRepoHealthView(sectionState.data);
+                    } else if (targetKey === 'securityRisk' && sectionState.data) {
+                        renderSecurityRiskView(sectionState.data);
+                    } else if (targetKey === 'commitHistory' && sectionState.summary) {
+                        renderCommitHistoryView(sectionState);
+                    }
+                } else if (!views[targetKey].children.length) {
+                    renderEmptySectionPrompt(targetKey);
+                }
+            }
+
+            function renderEmptySectionPrompt(sectionKey) {
+                const container = views[sectionKey];
+                if (!container) return;
+                const tabInfo = navTabs.find(t => t.key === sectionKey) || { label: sectionKey };
+
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border-radius: 12px; border: 1px dashed var(--border-color);">
+                        <span class="material-symbols-outlined" style="font-size: 44px; color: var(--primary-color); margin-bottom: 12px;">analytics</span>
+                        <h3 style="margin: 0 0 8px; font-size: 18px; color: var(--text-main);">${tabInfo.label}</h3>
+                        <p style="margin: 0 0 20px; color: var(--text-muted); font-size: 14px;">No report generated for this section yet. Click below to analyze your repositories.</p>
+                        <button id="run-${sectionKey}-btn" class="login-btn" style="width: auto; height: 38px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span> Run ${tabInfo.label} Analysis
+                        </button>
+                    </div>
+                `;
+
+                document.getElementById(`run-${sectionKey}-btn`)?.addEventListener('click', () => {
+                    triggerSectionFetch(sectionKey, true);
+                });
+            }
+
+            function showInvalidUrlWarning(invalidEntries) {
+                const textareaStyle = repoUrlInput.style;
+
+                if (!invalidEntries || invalidEntries.length === 0) {
+                    invalidUrlWarning.style.display = 'none';
+                    invalidUrlWarning.innerHTML = '<strong>Invalid URL found.</strong> Some entries were ignored because they are not valid GitHub repository links.';
+                    textareaStyle.border = '1.5px solid var(--border-color)';
+                    textareaStyle.boxShadow = 'none';
+                    return;
+                }
+
+                const list = invalidEntries.slice(0, 5).map(entry => `<li>${entry}</li>`).join('');
+                invalidUrlWarning.innerHTML = `
+                    <strong>Invalid URL found.</strong> These entries were ignored and will not be analyzed:
+                    <ul style="margin: 8px 0 0 18px; padding: 0;">${list}</ul>
+                `;
+                invalidUrlWarning.style.display = 'block';
+                textareaStyle.border = '1.5px solid #ef4444';
+                textareaStyle.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.12)';
+            }
+
+            function parseRepoUrls(rawValue) {
+                const seen = new Set();
+                const validUrls = [];
+                const invalidEntries = [];
+
+                (rawValue || '')
+                    .split('\n')
+                    .map(url => url.trim())
+                    .filter(Boolean)
+                    .forEach(url => {
+                        const cleaned = url.replace(/\?.*$/, '').replace(/#.*$/, '').replace(/\/$/, '');
+                        try {
+                            const parsed = new URL(cleaned);
+                            const isGitHub = parsed.hostname.toLowerCase() === 'github.com';
+                            const hasRepoPath = parsed.pathname.split('/').filter(Boolean).length >= 2;
+                            if (!isGitHub || !hasRepoPath) {
+                                invalidEntries.push(url);
+                                return;
+                            }
+                            const key = cleaned.toLowerCase();
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                validUrls.push(cleaned);
+                            }
+                        } catch {
+                            invalidEntries.push(url);
+                        }
+                    });
+
+                return { validUrls, invalidEntries };
+            }
+
+            function addPdfButton(containerEl, filenamePrefix) {
+                const pdfBtn = document.createElement('button');
+                pdfBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">download</span> Export PDF';
+                pdfBtn.className = 'login-btn';
+                pdfBtn.style.marginTop = '20px';
+                pdfBtn.style.width = 'auto';
+                pdfBtn.style.height = '40px';
+                pdfBtn.style.padding = '0 20px';
+                pdfBtn.style.display = 'inline-flex';
+                pdfBtn.style.gap = '8px';
+                pdfBtn.style.backgroundColor = '#10b981';
+                
+                pdfBtn.addEventListener('click', () => {
+                    const originalTitle = document.title;
+                    document.title = filenamePrefix;
+                    const sidebar = document.querySelector('aside');
+                    const header = document.querySelector('header');
+                    const mainContainer = document.querySelector('main');
+                    const inputGroup = document.querySelector('.input-group');
+                    
+                    sidebar.style.display = 'none';
+                    header.style.display = 'none';
+                    inputGroup.style.display = 'none';
+                    pdfBtn.style.display = 'none';
+                    
+                    document.body.style.background = 'white';
+                    mainContainer.style.marginLeft = '0';
+                    mainContainer.style.padding = '0';
+
+                    window.print();
+
+                    document.title = originalTitle;
+                    sidebar.style.display = 'block';
+                    header.style.display = 'flex';
+                    inputGroup.style.display = 'block';
+                    pdfBtn.style.display = 'inline-flex';
+                    
+                    document.body.style.background = 'var(--bg-color)';
+                    mainContainer.style.marginLeft = '280px';
+                    mainContainer.style.padding = '40px';
+                });
+
+                containerEl.appendChild(pdfBtn);
+            }
+
+            function createHeaderControls(titleText, sectionKey) {
+                const headerDiv = document.createElement('div');
+                headerDiv.style.display = 'flex';
+                headerDiv.style.justifyContent = 'space-between';
+                headerDiv.style.alignItems = 'center';
+                headerDiv.style.marginBottom = '20px';
+                headerDiv.style.paddingBottom = '12px';
+                headerDiv.style.borderBottom = '2px solid var(--bg-color)';
+
+                const titleEl = document.createElement('h2');
+                titleEl.style.margin = '0';
+                titleEl.style.fontSize = '22px';
+                titleEl.style.color = 'var(--text-main)';
+                titleEl.textContent = titleText;
+
+                const regenBtn = document.createElement('button');
+                regenBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Regenerate';
+                regenBtn.className = 'login-btn';
+                regenBtn.style.marginTop = '0';
+                regenBtn.style.width = 'auto';
+                regenBtn.style.height = '34px';
+                regenBtn.style.padding = '0 14px';
+                regenBtn.style.fontSize = '13px';
+                regenBtn.style.display = 'inline-flex';
+                regenBtn.style.alignItems = 'center';
+                regenBtn.style.gap = '6px';
+                regenBtn.style.backgroundColor = '#4f46e5';
+
+                regenBtn.addEventListener('click', () => {
+                    triggerSectionFetch(sectionKey, true);
+                });
+
+                headerDiv.appendChild(titleEl);
+                headerDiv.appendChild(regenBtn);
+                return headerDiv;
+            }
+
+            // --- Section Fetch Dispatcher ---
+            async function triggerSectionFetch(sectionKey, forceFetch = false) {
+                switchSection(sectionKey);
+
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length === 0) {
+                    alert('Please enter at least one valid GitHub Repository URL.');
+                    return;
+                }
+
+                const currentHash = getUrlHash(validUrls);
+                checkCommitStatus(validUrls);
+                if (APP_STATE.urlHash !== currentHash) {
+                    // Repositories changed: invalidate all section caches
+                    APP_STATE.urlHash = currentHash;
+                    APP_STATE.sections = { dashboard: null, architectureDiff: null, repoHealth: null, securityRisk: null, commitHistory: null };
+                }
+
+                const sectionState = APP_STATE.sections[sectionKey];
+                if (!forceFetch && sectionState && sectionState.urlHash === currentHash) {
+                    // Data exists for current URL hash -> instant restore
+                    return;
+                }
+
+                // Show loading
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                const tabInfo = navTabs.find(t => t.key === sectionKey) || { label: sectionKey };
+                loadingState.querySelector('p').textContent = `Running ${tabInfo.label} analysis...`;
+
+                try {
+                    let endpoint = '/analyze';
+                    if (sectionKey === 'architectureDiff') endpoint = '/architecture-diff';
+                    else if (sectionKey === 'repoHealth') endpoint = '/repo-health';
+                    else if (sectionKey === 'securityRisk') endpoint = '/security-risk';
+                    else if (sectionKey === 'commitHistory') endpoint = '/commit-history';
+
+                    const currentToken = localStorage.getItem('livedoc_jwt_token');
+
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentToken}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            localStorage.removeItem('livedoc_jwt_token');
+                            localStorage.removeItem('livedoc_user_email');
+                            sessionStorage.removeItem('livedoc_dashboard_cache');
+                            alert('Your login session has expired or is invalid. Please log in again.');
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                        throw new Error(`${tabInfo.label} request failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') throw new Error(resData.message);
+
+                    // Save section-specific data
+                    if (sectionKey === 'dashboard') {
+                        const markdown = resData.data?.markdown || '';
+                        APP_STATE.sections.dashboard = { urlHash: currentHash, markdown, timestamp: Date.now() };
+                        renderDashboardView(markdown);
+                    } else if (sectionKey === 'architectureDiff') {
+                        APP_STATE.sections.architectureDiff = { urlHash: currentHash, data: resData.data, timestamp: Date.now() };
+                        renderArchitectureDiffView(resData.data);
+                    } else if (sectionKey === 'repoHealth') {
+                        APP_STATE.sections.repoHealth = { urlHash: currentHash, data: resData.data, timestamp: Date.now() };
+                        renderRepoHealthView(resData.data);
+                    } else if (sectionKey === 'securityRisk') {
+                        APP_STATE.sections.securityRisk = { urlHash: currentHash, data: resData.data, timestamp: Date.now() };
+                        renderSecurityRiskView(resData.data);
+                    } else if (sectionKey === 'commitHistory') {
+                        const payload = {
+                            urlHash: currentHash,
+                            summary: resData.commit_summary || '',
+                            history: Array.isArray(resData.commit_history) ? resData.commit_history : [],
+                            timestamp: Date.now()
+                        };
+                        APP_STATE.sections.commitHistory = payload;
+                        renderCommitHistoryView(payload);
+                    }
+                    saveState();
+                    await checkCommitStatus(validUrls);
+
+                } catch (error) {
+                    console.error(`${sectionKey} fetch error:`, error);
+                    let errMessage = error.message || 'An unexpected error occurred.';
+                    if (errMessage.includes('Failed to fetch') || errMessage.includes('NetworkError')) {
+                        errMessage = 'Unable to connect to the LiveDoc backend API (http://127.0.0.1:8000). Please ensure your Python backend server is running.';
+                    }
+                    views[sectionKey].innerHTML = `
+                        <div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 20px; border-radius: 10px; color: #991b1b;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <span class="material-symbols-outlined" style="font-size: 22px;">error</span>
+                                <h3 style="margin: 0; font-size: 16px;">Connection / Analysis Error</h3>
+                            </div>
+                            <p style="margin: 0 0 14px; font-size: 14px; line-height: 1.5;">${errMessage}</p>
+                            <button id="retry-${sectionKey}-btn" class="login-btn" style="width: auto; height: 38px; padding: 0 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; background-color: #dc2626;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Retry Analysis
+                            </button>
+                        </div>`;
+                    document.getElementById(`retry-${sectionKey}-btn`)?.addEventListener('click', () => {
+                        triggerSectionFetch(sectionKey, true);
+                    });
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.style.display = 'none';
+                }
+            }
+
+            // --- 1. Isolated Dashboard Renderer ---
+            function renderDashboardView(markdownString) {
+                const container = views.dashboard;
+                if (!container) return;
+
+                function normalizeMermaidCode(input) {
+                    let text = String(input || '').replace(/\r\n/g, '\n').trim();
+                    text = text.replace(/^\s*mermaid\s*\n/i, '');
+                    text = text.replace(/^\s*```\s*(?:mermaid)?\s*/i, '');
+                    text = text.replace(/\s*```\s*$/i, '');
+                    text = text
+                        .replace(/[\u2018\u2019]/g, "'")
+                        .replace(/[\u201C\u201D]/g, '"')
+                        .replace(/[\u2013\u2014]/g, '-')
+                        .replace(/\u2192/g, '-->');
+
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\s*([^\]]+)?\]/g, '$1["$2 $3"]');
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\]/g, '$1["$2"]');
+
+                    // Fix unquoted brackets inside labels A[repo file.py] -> A["repo file.py"]
+                    text = text.replace(/([A-Za-z0-9_]+)\[(?!\s*")([^\]]+)\]/g, (match, id, label) => {
+                        const cleanLabel = label.replace(/"/g, "'").trim();
+                        return `${id}["${cleanLabel}"]`;
+                    });
+
+                    const lines = text.split('\n');
+                    const diagramStartPattern = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|mindmap|timeline|gitGraph|quadrantChart|requirementDiagram|C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)\b/i;
+                    const startIndex = lines.findIndex(line => diagramStartPattern.test(line.trim()));
+                    if (startIndex > 0) text = lines.slice(startIndex).join('\n').trim();
+                    if (!diagramStartPattern.test((text.split('\n')[0] || '').trim())) return '';
+                    return text;
+                }
+
+                const renderer = new marked.Renderer();
+                const originalCode = renderer.code.bind(renderer);
+                renderer.code = function () {
+                    let codeText = '', language = '';
+                    if (typeof arguments[0] === 'object' && arguments[0] !== null) {
+                        codeText = arguments[0].text; language = arguments[0].lang;
+                    } else { codeText = arguments[0]; language = arguments[1]; }
+
+                    if (String(language || '').trim().toLowerCase().includes('mermaid')) {
+                        const encoded = encodeURIComponent(codeText || '');
+                        return `<div class="mermaid-wrapper" style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; overflow-x: auto;">
+                            <div class="mermaid-source" data-mermaid-source="${encoded}"></div>
+                        </div>`;
+                    }
+                    return originalCode.apply(this, arguments);
+                };
+
+                marked.use({ renderer });
+
+                container.innerHTML = '';
+                container.appendChild(createHeaderControls('System Architecture Documentation', 'dashboard'));
+
+                const markdownContainer = document.createElement('div');
+                markdownContainer.className = 'ai-technical-report';
+                markdownContainer.innerHTML = marked.parse(markdownString);
+                container.appendChild(markdownContainer);
+                addPdfButton(container, 'LiveDoc_Code_Analysis');
+
+                setTimeout(() => {
+                    const sourceNodes = container.querySelectorAll('.mermaid-source');
+                    sourceNodes.forEach(async (sourceNode, index) => {
+                        const wrapper = sourceNode.closest('.mermaid-wrapper');
+                        if (!wrapper) return;
+
+                        const rawCode = decodeURIComponent(sourceNode.dataset.mermaidSource || '');
+                        const safeCode = normalizeMermaidCode(rawCode);
+
+                        if (!safeCode) {
+                            wrapper.innerHTML = `
+                                <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; font-size: 13px;">
+                                    <strong style="color: var(--text-muted); display: block; margin-bottom: 6px;">Diagram Source View:</strong>
+                                    <pre style="white-space: pre-wrap; margin: 0; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">${rawCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                                </div>`;
+                            return;
+                        }
+
+                        const diagramId = `mermaid-dash-${Date.now()}-${index}`;
+                        try {
+                            if (window.mermaid && window.mermaid.parse) {
+                                await window.mermaid.parse(safeCode);
+                            }
+                            const renderTarget = document.createElement('div');
+                            renderTarget.className = 'mermaid-rendered';
+                            const renderResult = await mermaid.render(diagramId, safeCode);
+                            renderTarget.innerHTML = renderResult.svg;
+                            wrapper.innerHTML = '';
+                            wrapper.appendChild(renderTarget);
+                        } catch (err) {
+                            console.warn('Mermaid rendering syntax variation handled gracefully:', err);
+                            const cleanDisplay = safeCode.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            wrapper.innerHTML = `
+                                <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; font-size: 13px;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--text-muted);">
+                                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary-color);">account_tree</span>
+                                        <strong style="font-size: 14px; color: var(--text-main);">Architecture Diagram Specification</strong>
+                                    </div>
+                                    <pre style="white-space: pre-wrap; margin: 0; background: white; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); color: #334155; font-family: monospace; font-size: 13px; line-height: 1.5;">${cleanDisplay}</pre>
+                                </div>`;
+                        }
+                    });
+                }, 100);
+            }
+
+            // --- 2. Isolated Architecture Drift Renderer (with Aligned Data Table) ---
+            function renderArchitectureDiffView(diffData) {
+                const container = views.architectureDiff;
+                if (!container) return;
+
+                const diff = diffData || {};
+                const snapshots = diff.snapshots || [];
+                const drift = diff.drift || [];
+                const aiReport = diff.ai_report || '';
+
+                const snapshotRows = snapshots.map(snapshot => {
+                    const repoUrl = snapshot.repo || 'Unknown';
+                    const totalFiles = snapshot.total_files || 0;
+                    const topFolders = (snapshot.top_folders || []).slice(0, 5).join(', ') || 'Root';
+                    const categories = Object.entries(snapshot.categories || {})
+                        .map(([name, count]) => `<code>${name}</code>: ${count}`)
+                        .join('<br>');
+                    
+                    return `
+                        <tr>
+                            <td><strong style="color: var(--primary-color); word-break: break-all;">${repoUrl}</strong></td>
+                            <td>${topFolders}</td>
+                            <td style="font-weight: 600; text-align: center;">${totalFiles}</td>
+                            <td>${categories || 'None'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const snapshotTableHtml = `
+                    <h3 style="margin-top: 30px;">Repository Snapshots & Structure Matrix</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">Repository URL</th>
+                                    <th style="width: 25%;">Snapshot Path / Folders</th>
+                                    <th style="width: 15%; text-align: center;">Total Files</th>
+                                    <th style="width: 25%;">Categorisation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${snapshotRows || '<tr><td colspan="4">No snapshot data available</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                const driftRows = drift.length > 0 ? drift.map(item => {
+                    const missing = item.missing_from_baseline.length ? item.missing_from_baseline.map(m => `<code>${m}</code>`).join(', ') : 'None';
+                    const extra = item.extra_vs_baseline.length ? item.extra_vs_baseline.map(e => `<code>${e}</code>`).join(', ') : 'None';
+                    return `
+                        <tr>
+                            <td><strong style="word-break: break-all;">${item.repo}</strong></td>
+                            <td>${missing}</td>
+                            <td>${extra}</td>
+                        </tr>
+                    `;
+                }).join('') : '<tr><td colspan="3">No major structural architecture drift detected between repositories.</td></tr>';
+
+                const driftTableHtml = `
+                    <h3 style="margin-top: 30px;">Structural Variations & Drift Highlights</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Target Repository</th>
+                                    <th style="width: 30%;">Missing Categories (vs Baseline)</th>
+                                    <th style="width: 30%;">Extra Categories (vs Baseline)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${driftRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                container.innerHTML = '';
+                container.appendChild(createHeaderControls('Architecture Drift Technical Audit', 'architectureDiff'));
+
+                const contentContainer = document.createElement('div');
+                let aiReportParsed = '';
+                if (aiReport) {
+                    aiReportParsed = `<div class="ai-technical-report">${marked.parse(aiReport)}</div>`;
+                }
+
+                contentContainer.innerHTML = `
+                    ${aiReportParsed}
+                    ${snapshotTableHtml}
+                    ${driftTableHtml}
+                `;
+
+                container.appendChild(contentContainer);
+                addPdfButton(container, 'LiveDoc_Architecture_Drift');
+            }
+
+            // --- 3. Isolated Repo Health Renderer ---
+            function renderRepoHealthView(healthData) {
+                const container = views.repoHealth;
+                if (!container) return;
+
+                const health = healthData || {};
+                const reports = health.reports || [];
+                const aiReport = health.ai_report || '';
+
+                const cards = reports.map(report => {
+                    const color = report.score >= 80 ? '#10b981' : report.score >= 60 ? '#f59e0b' : report.score >= 40 ? '#f97316' : '#ef4444';
+                    return `
+                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <h4 style="margin: 0; font-size: 16px; word-break: break-all;">${report.repo}</h4>
+                                <span style="background: ${color}; color: white; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px;">${report.score}/100</span>
+                            </div>
+                            <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 14px;">
+                                <div style="height: 100%; width: ${report.score}%; background: ${color}; border-radius: 999px;"></div>
+                            </div>
+                            <p style="margin: 0 0 8px; color: var(--text-muted);">Health Status: <strong>${report.label}</strong></p>
+                            <p style="margin: 0; color: var(--text-muted);">Tracked Source Files: <strong>${report.file_count}</strong> &bull; Total Commits: <strong>${report.commit_count}</strong></p>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = '';
+                container.appendChild(createHeaderControls(`Repository Health Assessment (${health.overall_score || 0}/100)`, 'repoHealth'));
+
+                const contentContainer = document.createElement('div');
+                let aiReportParsed = '';
+                if (aiReport) {
+                    aiReportParsed = `<div class="ai-technical-report">${marked.parse(aiReport)}</div>`;
+                }
+
+                contentContainer.innerHTML = `
+                    ${aiReportParsed}
+                    <h3 style="margin-top: 30px;">Repository Health Scorecards</h3>
+                    ${cards}
+                `;
+
+                container.appendChild(contentContainer);
+                addPdfButton(container, 'LiveDoc_Repo_Health');
+            }
+
+            // --- 4. Isolated Security Risk Renderer ---
+            function renderSecurityRiskView(riskData) {
+                const container = views.securityRisk;
+                if (!container) return;
+
+                const risk = riskData || {};
+                const reports = risk.reports || [];
+                const aiReport = risk.ai_report || '';
+
+                const cards = reports.map(report => {
+                    const color = report.risk_score >= 75 ? '#ef4444' : report.risk_score >= 45 ? '#f59e0b' : '#10b981';
+                    return `
+                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <h4 style="margin: 0; font-size: 16px; word-break: break-all;">${report.repo}</h4>
+                                <span style="background: ${color}; color: white; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px;">${report.risk_score}/100 Risk</span>
+                            </div>
+                            <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 14px;">
+                                <div style="height: 100%; width: ${report.risk_score}%; background: ${color}; border-radius: 999px;"></div>
+                            </div>
+                            <p style="margin: 0 0 8px; color: var(--text-muted);">Risk Category: <strong>${report.label}</strong></p>
+                            <h5 style="margin: 12px 0 6px; font-size: 14px; border: none; padding: 0;">Risk Findings:</h5>
+                            <ul style="margin: 0; color: var(--text-muted); line-height: 1.6; padding-left: 18px;">
+                                ${report.findings.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = '';
+                container.appendChild(createHeaderControls(`Security Risk Posture (${risk.overall_risk_score || 0}/100)`, 'securityRisk'));
+
+                const contentContainer = document.createElement('div');
+                let aiReportParsed = '';
+                if (aiReport) {
+                    aiReportParsed = `<div class="ai-technical-report">${marked.parse(aiReport)}</div>`;
+                }
+
+                contentContainer.innerHTML = `
+                    ${aiReportParsed}
+                    <h3 style="margin-top: 30px;">Repository Threat Posture Cards</h3>
+                    ${cards}
+                `;
+
+                container.appendChild(contentContainer);
+                addPdfButton(container, 'LiveDoc_Security_Risk');
+            }
+
+            // --- 5. Isolated Commit History Renderer ---
+            function renderCommitHistoryView(payload) {
+                const container = views.commitHistory;
+                if (!container) return;
+
+                const summary = payload.summary || '';
+                const history = payload.history || [];
+
+                const itemsHtml = history.map(item => {
+                    const dateText = item.date || 'Unknown date';
+                    const author = item.author || 'Unknown';
+                    const msg = item.message || '';
+                    
+                    return `
+                    <div style="border-left: 3px solid var(--primary-color); padding-left: 18px; margin-bottom: 22px; position: relative;">
+                        <div style="position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color);"></div>
+                        <span style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">${dateText} &bull; <strong>${author}</strong></span>
+                        <span style="display: block; font-size: 15px; color: var(--text-main); line-height: 1.6; word-break: break-word;">${msg}</span>
+                    </div>`;
+                }).join('');
+
+                container.innerHTML = '';
+                container.appendChild(createHeaderControls('Commit History & Development Analysis', 'commitHistory'));
+
+                const contentContainer = document.createElement('div');
+                const summaryParsed = `<div class="ai-technical-report">${marked.parse(summary)}</div>`;
+
+                contentContainer.innerHTML = `
+                    ${summaryParsed}
+                    <h3 style="margin-top: 30px;">Recent Commits Timeline</h3>
+                    <div style="margin-top: 20px;">
+                        ${itemsHtml}
+                    </div>
+                `;
+
+                container.appendChild(contentContainer);
+                addPdfButton(container, 'LiveDoc_Commit_History');
+            }
+
+            // --- Nav Link Event Listeners ---
+            dashboardNavBtn?.addEventListener('click', (e) => { e.preventDefault(); triggerSectionFetch('dashboard', false); });
+            architectureDiffBtn?.addEventListener('click', (e) => { e.preventDefault(); triggerSectionFetch('architectureDiff', false); });
+            repoHealthBtn?.addEventListener('click', (e) => { e.preventDefault(); triggerSectionFetch('repoHealth', false); });
+            securityRiskBtn?.addEventListener('click', (e) => { e.preventDefault(); triggerSectionFetch('securityRisk', false); });
+            commitHistoryBtn?.addEventListener('click', (e) => { e.preventDefault(); triggerSectionFetch('commitHistory', false); });
+
+            analyzeBtn?.addEventListener('click', () => { triggerSectionFetch('dashboard', true); });
+            repoUrlInput?.addEventListener('input', () => { saveState(); });
+
+            // Initialize active section view
+            const initialTab = APP_STATE.activeSection || 'dashboard';
+            switchSection(initialTab);
+        });
+    </script>
+</body>
+</html>
