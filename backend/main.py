@@ -91,6 +91,334 @@ class TriggerUpdateRequest(BaseModel):
 class CommitHistoryRequest(BaseModel):
     repo_urls: list[str]
 
+
+class ArchitectureDiffRequest(BaseModel):
+    repo_urls: list[str]
+
+
+class RepoHealthRequest(BaseModel):
+    repo_urls: list[str]
+
+
+class SecurityRiskRequest(BaseModel):
+    repo_urls: list[str]
+
+
+def _normalize_repo_urls(repo_urls: list[str]) -> list[str]:
+    if not repo_urls:
+        raise ValueError("At least one repository URL must be provided.")
+
+    normalized = []
+    seen = set()
+    for raw_url in repo_urls:
+        if not isinstance(raw_url, str):
+            continue
+        cleaned = raw_url.strip().replace("?utm_source=chatgpt.com", "").strip('/');
+        if not cleaned:
+            continue
+        if "github.com" not in cleaned.lower():
+            continue
+        if cleaned.lower().startswith("http://"):
+            cleaned = "https://" + cleaned.split("//", 1)[1]
+        if cleaned.lower() not in seen:
+            seen.add(cleaned.lower())
+            normalized.append(cleaned)
+
+    if not normalized:
+        raise ValueError("No valid GitHub repository URLs were provided. Use one URL per line.")
+
+    return normalized
+
+
+def _classify_repo_path(path: str) -> str:
+    lowered = path.lower()
+    if any(token in lowered for token in ["frontend", "ui", "components", "templates", "public"]):
+        return "frontend"
+    if any(token in lowered for token in ["backend", "api", "server", "routes", "controllers", "services", "middleware", "models"]):
+        return "backend"
+    if any(token in lowered for token in ["tests", "test", "spec", "e2e"]):
+        return "tests"
+    if any(token in lowered for token in ["config", "settings", "infra", "deploy", "docker", "kubernetes", "env"]):
+        return "config"
+    if any(token in lowered for token in ["docs", "readme", "documentation"]):
+        return "docs"
+    return "other"
+
+
+def _build_repo_architecture_snapshot(repo_url: str, files: list[dict]) -> dict:
+    category_counts: dict[str, int] = {}
+    folders: set[str] = set()
+    file_names: list[str] = []
+
+    for file in files or []:
+        path = str(file.get("path", "")).strip()
+        if not path:
+            continue
+        file_names.append(path)
+        cat = _classify_repo_path(path)
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+        if "/" in path:
+            folders.add(path.split("/", 1)[0])
+        else:
+            folders.add(path)
+
+    return {
+        "repo": repo_url,
+        "total_files": len(file_names),
+        "categories": category_counts,
+        "top_folders": sorted(folders)[:10],
+        "sample_files": file_names[:10],
+    }
+
+
+async def _get_architecture_diff(repo_urls: list[str]) -> dict:
+    normalized = _normalize_repo_urls(repo_urls)
+    all_repo_files = await asyncio.gather(
+        *[github_service.fetch_repo_contents(url) for url in normalized],
+        return_exceptions=True,
+    )
+
+    repo_snapshots = []
+    for repo_url, files in zip(normalized, all_repo_files):
+        if isinstance(files, Exception) or not files:
+            repo_snapshots.append({
+                "repo": repo_url,
+                "total_files": 0,
+                "categories": {},
+                "top_folders": [],
+                "sample_files": [],
+                "notes": "No supported files were found in this repository.",
+            })
+            continue
+        repo_snapshots.append(_build_repo_architecture_snapshot(repo_url, files))
+
+    if not repo_snapshots:
+        raise ValueError("No repository structure could be analyzed.")
+
+    common_categories = set.intersection(*(set(snapshot.get("categories", {}).keys()) for snapshot in repo_snapshots if snapshot.get("categories")))
+    baseline = repo_snapshots[0].get("categories", {})
+    drift_items = []
+    for snapshot in repo_snapshots:
+        current = snapshot.get("categories", {})
+        missing = sorted(set(baseline.keys()) - set(current.keys()))
+        extra = sorted(set(current.keys()) - set(baseline.keys()))
+        if missing or extra:
+            drift_items.append({
+                "repo": snapshot.get("repo"),
+                "missing_from_baseline": missing,
+                "extra_vs_baseline": extra,
+            })
+
+    return {
+        "status": "success",
+        "repo_count": len(normalized),
+        "common_categories": sorted(common_categories),
+        "baseline_repo": normalized[0],
+        "snapshots": repo_snapshots,
+        "drift": drift_items,
+        "summary": (
+            f"Compared {len(normalized)} repositories to detect architecture drift. "
+            f"Common structural categories: {', '.join(sorted(common_categories)) if common_categories else 'none'}"
+        ),
+    }
+
+
+def _score_repo_health(repo_url: str, file_count: int, commit_count: int, latest_commit_date: str | None) -> dict:
+    score = 40
+
+    if file_count > 0:
+        score += min(25, file_count * 0.35)
+    else:
+        score -= 30
+
+    if commit_count >= 20:
+        score += 20
+    elif commit_count >= 8:
+        score += 12
+    elif commit_count >= 3:
+        score += 6
+    elif commit_count == 0:
+        score -= 25
+
+    if latest_commit_date:
+        try:
+            parsed = datetime.fromisoformat(latest_commit_date.replace("Z", "+00:00"))
+            age_days = (datetime.utcnow() - parsed.replace(tzinfo=None)).total_seconds() / 86400
+            if age_days <= 30:
+                score += 20
+            elif age_days <= 180:
+                score += 10
+            else:
+                score -= 10
+        except Exception:
+            pass
+
+    if file_count == 0:
+        score -= 15
+
+    score = max(0, min(100, int(round(score))))
+
+    if score >= 80:
+        label = "Healthy"
+    elif score >= 60:
+        label = "Stable"
+    elif score >= 40:
+        label = "Watchlist"
+    else:
+        label = "Critical"
+
+    return {
+        "repo": repo_url,
+        "score": score,
+        "label": label,
+        "file_count": file_count,
+        "commit_count": commit_count,
+        "latest_commit_date": latest_commit_date,
+        "health_factors": {
+            "structure": "good" if file_count > 0 else "weak",
+            "activity": "high" if commit_count >= 8 else "medium" if commit_count > 0 else "low",
+            "maintenance": "active" if latest_commit_date else "unknown",
+        },
+    }
+
+
+async def _get_repo_health(repo_urls: list[str]) -> dict:
+    normalized = _normalize_repo_urls(repo_urls)
+
+    all_repo_files = await asyncio.gather(
+        *[github_service.fetch_repo_contents(url) for url in normalized],
+        return_exceptions=True,
+    )
+    all_repo_commits = await asyncio.gather(
+        *[github_service.fetch_all_commits(url, per_page=50, max_pages=2) for url in normalized],
+        return_exceptions=True,
+    )
+
+    reports = []
+    for repo_url, files, commits in zip(normalized, all_repo_files, all_repo_commits):
+        file_count = len(files) if isinstance(files, list) else 0
+        commit_count = len(commits) if isinstance(commits, list) else 0
+        latest_commit_date = None
+
+        if isinstance(commits, list) and commits:
+            for item in commits:
+                commit_obj = item.get("commit", {}) if isinstance(item, dict) else {}
+                author = commit_obj.get("author") or {}
+                date_value = author.get("date") or commit_obj.get("committer", {}).get("date")
+                if date_value:
+                    latest_commit_date = date_value
+                    break
+
+        reports.append(_score_repo_health(repo_url, file_count, commit_count, latest_commit_date))
+
+    avg_score = round(sum(item["score"] for item in reports) / len(reports)) if reports else 0
+    return {
+        "status": "success",
+        "repo_count": len(normalized),
+        "overall_score": avg_score,
+        "summary": f"Average repository health score across {len(normalized)} repositories: {avg_score}/100.",
+        "reports": reports,
+    }
+
+
+def _score_security_risk(repo_url: str, file_count: int, commit_count: int, latest_commit_date: str | None) -> dict:
+    score = 20
+    findings = []
+
+    if file_count == 0:
+        score += 30
+        findings.append("No supported source files found; repository may be empty or inaccessible.")
+    elif file_count < 50:
+        score += 10
+        findings.append("Repository is small and may have limited coverage or maturity.")
+    else:
+        score -= 10
+
+    if commit_count == 0:
+        score += 25
+        findings.append("No recent commit activity detected; maintenance signal is weak.")
+    elif commit_count < 5:
+        score += 12
+        findings.append("Low commit activity may indicate stalled maintenance.")
+    else:
+        score -= 8
+
+    if latest_commit_date:
+        try:
+            parsed = datetime.fromisoformat(latest_commit_date.replace("Z", "+00:00"))
+            age_days = (datetime.utcnow() - parsed.replace(tzinfo=None)).total_seconds() / 86400
+            if age_days > 180:
+                score += 18
+                findings.append("Repository has not been updated recently; risk of stale dependencies or issues.")
+            elif age_days > 90:
+                score += 8
+                findings.append("Maintenance has slowed; monitor for security drift.")
+            else:
+                score -= 10
+        except Exception:
+            pass
+
+    if file_count > 2000:
+        score -= 8
+        findings.append("Large repository size can increase operational complexity and review overhead.")
+
+    score = max(0, min(100, int(round(score))))
+    if score >= 75:
+        label = "High Risk"
+    elif score >= 45:
+        label = "Medium Risk"
+    else:
+        label = "Low Risk"
+
+    return {
+        "repo": repo_url,
+        "risk_score": score,
+        "label": label,
+        "file_count": file_count,
+        "commit_count": commit_count,
+        "latest_commit_date": latest_commit_date,
+        "findings": findings or ["No major security-risk indicators detected from repository metadata."],
+    }
+
+
+async def _get_security_risk(repo_urls: list[str]) -> dict:
+    normalized = _normalize_repo_urls(repo_urls)
+
+    all_repo_files = await asyncio.gather(
+        *[github_service.fetch_repo_contents(url) for url in normalized],
+        return_exceptions=True,
+    )
+    all_repo_commits = await asyncio.gather(
+        *[github_service.fetch_all_commits(url, per_page=50, max_pages=2) for url in normalized],
+        return_exceptions=True,
+    )
+
+    reports = []
+    for repo_url, files, commits in zip(normalized, all_repo_files, all_repo_commits):
+        file_count = len(files) if isinstance(files, list) else 0
+        commit_count = len(commits) if isinstance(commits, list) else 0
+        latest_commit_date = None
+
+        if isinstance(commits, list) and commits:
+            for item in commits:
+                commit_obj = item.get("commit", {}) if isinstance(item, dict) else {}
+                author = commit_obj.get("author") or {}
+                date_value = author.get("date") or commit_obj.get("committer", {}).get("date")
+                if date_value:
+                    latest_commit_date = date_value
+                    break
+
+        reports.append(_score_security_risk(repo_url, file_count, commit_count, latest_commit_date))
+
+    avg_risk = round(sum(item["risk_score"] for item in reports) / len(reports)) if reports else 0
+    return {
+        "status": "success",
+        "repo_count": len(normalized),
+        "overall_risk_score": avg_risk,
+        "summary": f"Average security risk score across {len(normalized)} repositories: {avg_risk}/100.",
+        "reports": reports,
+    }
+
 # Helper functions for the core analysis logic so they can be reused by background tasks
 from fastapi import BackgroundTasks, HTTPException
 
@@ -173,18 +501,18 @@ async def _fetch_and_store_history(repo_urls: list[str], tenant_id: str = None):
 async def analyze_repo(payload: AnalyzeRequest, request: Request):
     """Real-time blocking endpoint for the UI dashboard."""
     tenant_id = getattr(request.state, "tenant_id", None)
-    if not payload.repo_urls:
-        return {"status": "error", "message": "At least one repository URL must be provided."}
-    
-    # We call the helper but wait for it to finish because the UI needs the response instantly
     try:
-        # We rewrite the helper logic here specifically so we can return the exact data map to the UI.
+        repo_urls = _normalize_repo_urls(payload.repo_urls)
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+
+    try:
         codebase_analysis = []
         all_repo_files = await asyncio.gather(
-            *[github_service.fetch_repo_contents(url) for url in payload.repo_urls],
+            *[github_service.fetch_repo_contents(url) for url in repo_urls],
             return_exceptions=True
         )
-        for repo_url, files in zip(payload.repo_urls, all_repo_files):
+        for repo_url, files in zip(repo_urls, all_repo_files):
             if isinstance(files, Exception) or not files: continue
             for file in files:
                 try:
@@ -194,13 +522,13 @@ async def analyze_repo(payload: AnalyzeRequest, request: Request):
                     codebase_analysis.append(parsed_data)
                 except Exception as e: pass
         if not codebase_analysis:
-            return {"status": "error", "message": "No supported source files could be parsed."}
+            return {"status": "error", "message": "No supported source files could be parsed from the provided repositories."}
             
-        repos_context_string = ", ".join(payload.repo_urls)
+        repos_context_string = ", ".join(repo_urls)
         documentation = await ai_service.generate_documentation(codebase_analysis, repos_context_string)
         docs_collection = db.get_generated_docs_collection()
         doc_entry = {
-            "tenant_id": tenant_id, "repo_urls": payload.repo_urls, "documentation": documentation, "created_at": datetime.utcnow()
+            "tenant_id": tenant_id, "repo_urls": repo_urls, "documentation": documentation, "created_at": datetime.utcnow()
         }
         await docs_collection.insert_one(doc_entry)
         return {"status": "success", "message": "Documentation generated successfully", "data": {"markdown": documentation}}
@@ -208,21 +536,65 @@ async def analyze_repo(payload: AnalyzeRequest, request: Request):
         return {"status": "error", "message": str(e)}
 
 
+@app.post("/architecture-diff")
+async def architecture_diff(payload: ArchitectureDiffRequest, request: Request):
+    """Compare multiple repositories and summarize structural drift between them."""
+    try:
+        result = await _get_architecture_diff(payload.repo_urls)
+        return {"status": "success", "data": result}
+    except ValueError as exc:
+        return {"status": "error", "message": str(exc)}
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(exc)}
+
+
+@app.post("/repo-health")
+async def repo_health(payload: RepoHealthRequest, request: Request):
+    """Rate repository health across activity, structure, and maintenance signals."""
+    try:
+        result = await _get_repo_health(payload.repo_urls)
+        return {"status": "success", "data": result}
+    except ValueError as exc:
+        return {"status": "error", "message": str(exc)}
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(exc)}
+
+
+@app.post("/security-risk")
+async def security_risk(payload: SecurityRiskRequest, request: Request):
+    """Estimate repository security risk based on maintenance and structural signals."""
+    try:
+        result = await _get_security_risk(payload.repo_urls)
+        return {"status": "success", "data": result}
+    except ValueError as exc:
+        return {"status": "error", "message": str(exc)}
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(exc)}
+
+
 @app.post("/commit-history")
 async def get_commit_history(payload: CommitHistoryRequest, request: Request):
     """Real-time blocking endpoint for the UI dashboard."""
     tenant_id = getattr(request.state, "tenant_id", None)
-    if not payload.repo_urls:
-        return {"commit_summary": "Error: At least one repository URL must be provided."}
+    try:
+        repo_urls = _normalize_repo_urls(payload.repo_urls)
+    except ValueError as e:
+        return {"commit_summary": f"Error: {str(e)}"}
     try:
         all_repo_commits = await asyncio.gather(
-            *[github_service.fetch_all_commits(url) for url in payload.repo_urls],
+            *[github_service.fetch_all_commits(url) for url in repo_urls],
             return_exceptions=True
         )
         formatted_commits_for_ai = []
         commit_history_structured = []
         fetch_errors = []
-        for repo_url, commits in zip(payload.repo_urls, all_repo_commits):
+        for repo_url, commits in zip(repo_urls, all_repo_commits):
             if isinstance(commits, Exception):
                 fetch_errors.append(f"{repo_url}: {str(commits)}")
                 continue
@@ -250,11 +622,11 @@ async def get_commit_history(payload: CommitHistoryRequest, request: Request):
             }
 
         commit_history_structured.sort(key=lambda x: x.get("date", ""), reverse=True)
-        repos_context_string = ", ".join(payload.repo_urls)
+        repos_context_string = ", ".join(repo_urls)
         summary = await ai_service.summarize_commits(repos_context_string, formatted_commits_for_ai)
         commit_collection = db.get_commit_history_collection()
         commit_entry = {
-            "tenant_id": tenant_id, "repo_urls": payload.repo_urls, "commit_summary": summary, "commit_history": commit_history_structured, "created_at": datetime.utcnow()
+            "tenant_id": tenant_id, "repo_urls": repo_urls, "commit_summary": summary, "commit_history": commit_history_structured, "created_at": datetime.utcnow()
         }
         await commit_collection.insert_one(commit_entry)
         return {"commit_summary": summary, "commit_history": commit_history_structured}

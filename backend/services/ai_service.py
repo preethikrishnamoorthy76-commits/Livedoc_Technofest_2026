@@ -37,20 +37,24 @@ Based on the above architecture, please generate a comprehensive README and inte
 Your output MUST format beautifully in Markdown.
 
 CRITICAL for Mermaid.js (version 11.12.3 compatibility):
-- You MUST include **two** separate Mermaid diagrams:
-    1) A **Cross-Repo Core Architecture flowchart** showing how the main repositories, components, and files of the project interact. If multiple repositories were provided, emphasize how they communicate with each other.
+- You MUST include exactly two separate Mermaid diagrams, and both diagrams MUST render without errors.
+    1) A **Cross-Repo Core Architecture flowchart** showing how the main repositories, components, and files of the project interact. If multiple repositories were provided, emphasize how they communicate with each other. If only one repository is provided, show that repository's major high-level modules and their dependencies instead of inventing cross-repo links.
     2) A **Request Lifecycle Sequence Diagram** that traces an end-to-end flow across the system.
-- Every diagram MUST be provided as a fenced code block in pure Mermaid syntax, like this:
+- Every diagram MUST be provided as a fenced code block in pure Mermaid syntax exactly like:
 
 ```mermaid
 flowchart LR
-    ...
+    frontendUI["Frontend UI"] --> apiGateway["API Gateway"]
+    apiGateway --> backendService["Backend Service"]
 ```
 
-- INSIDE the ```mermaid fenced code block you MUST NOT place any prose, titles, sentences, or markdown – ONLY valid Mermaid syntax.
-- CRITICAL for Node text: Since file names now include bracketed repository names like [frontend-repo], you MUST wrap all node display text in double quotes to prevent syntax errors. Example:
-    Correct: nodeID["[frontend-repo] main.js"]
-    Wrong: nodeID[[frontend-repo] main.js]
+- INSIDE each ```mermaid fenced code block you MUST NOT place any prose, titles, sentences, markdown, HTML, or comments. ONLY valid Mermaid syntax is allowed.
+- Use only Mermaid-supported diagram types: `flowchart` or `sequenceDiagram`.
+- For any node labels that include file names or repo tags such as `[frontend-repo]`, wrap the entire label in double quotes. Example:
+    Correct: A["[frontend-repo] main.js"]
+    Wrong: A[[frontend-repo] main.js]
+- Do not use unsupported Mermaid features such as C4 diagrams, HTML tags, callouts, markdown bullets, or non-ASCII characters inside diagram labels.
+- Keep node IDs simple and alphanumeric, such as `frontendUI`, `apiGateway`, `repoParser`.
 - Put any headings or explanations OUTSIDE the ```mermaid block as normal markdown.
 
 Your final output should be 100% pure markdown that can be directly passed to marked.js (no outer "```" wrapping the entire response).

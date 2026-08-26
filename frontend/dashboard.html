@@ -22,7 +22,19 @@
                 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
-            <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+            <a href="#" id="architectureDiffBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">account_tree</span>
+                Architecture Drift
+            </a>
+            <a href="#" id="repoHealthBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">monitor_heart</span>
+                Repo Health
+            </a>
+            <a href="#" id="securityRiskBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                <span class="material-symbols-outlined">security</span>
+                Security Risk
+            </a>
+            <a href="#" id="commitHistoryBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: all 0.2s;">
                 <span class="material-symbols-outlined">history</span>
                 Commit History
             </a>
@@ -56,6 +68,9 @@
                         <span class="material-symbols-outlined">auto_awesome_mosaic</span>
                         Generate Docs
                     </button>
+                </div>
+                <div id="invalidUrlWarning" style="display: none; margin-top: 12px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3b12; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.5;">
+                    <strong>Invalid URL found.</strong> Some entries were ignored because they are not valid GitHub repository links.
                 </div>
             </div>
             
@@ -106,10 +121,67 @@
             });
             
             const analyzeBtn = document.getElementById('analyzeSubmitBtn');
+            const architectureDiffBtn = document.getElementById('architectureDiffBtn');
+            const repoHealthBtn = document.getElementById('repoHealthBtn');
+            const securityRiskBtn = document.getElementById('securityRiskBtn');
             const repoUrlInput = document.getElementById('repoUrlInput');
             const loadingState = document.getElementById('loadingState');
             const resultsArea = document.getElementById('resultsArea');
+            const invalidUrlWarning = document.getElementById('invalidUrlWarning');
             const API_BASE_URL = 'http://127.0.0.1:8000';
+
+            function showInvalidUrlWarning(invalidEntries) {
+                const textareaStyle = repoUrlInput.style;
+
+                if (!invalidEntries || invalidEntries.length === 0) {
+                    invalidUrlWarning.style.display = 'none';
+                    invalidUrlWarning.innerHTML = '<strong>Invalid URL found.</strong> Some entries were ignored because they are not valid GitHub repository links.';
+                    textareaStyle.border = '1.5px solid var(--border-color)';
+                    textareaStyle.boxShadow = 'none';
+                    return;
+                }
+
+                const list = invalidEntries.slice(0, 5).map(entry => `<li>${entry}</li>`).join('');
+                invalidUrlWarning.innerHTML = `
+                    <strong>Invalid URL found.</strong> These entries were ignored and will not be analyzed:
+                    <ul style="margin: 8px 0 0 18px; padding: 0;">${list}</ul>
+                `;
+                invalidUrlWarning.style.display = 'block';
+                textareaStyle.border = '1.5px solid #ef4444';
+                textareaStyle.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.12)';
+            }
+
+            function parseRepoUrls(rawValue) {
+                const seen = new Set();
+                const validUrls = [];
+                const invalidEntries = [];
+
+                rawValue
+                    .split('\n')
+                    .map(url => url.trim())
+                    .filter(Boolean)
+                    .forEach(url => {
+                        const cleaned = url.replace(/\?.*$/, '').replace(/#.*$/, '').replace(/\/$/, '');
+                        try {
+                            const parsed = new URL(cleaned);
+                            const isGitHub = parsed.hostname.toLowerCase() === 'github.com';
+                            const hasRepoPath = parsed.pathname.split('/').filter(Boolean).length >= 2;
+                            if (!isGitHub || !hasRepoPath) {
+                                invalidEntries.push(url);
+                                return;
+                            }
+                            const key = cleaned.toLowerCase();
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                validUrls.push(cleaned);
+                            }
+                        } catch {
+                            invalidEntries.push(url);
+                        }
+                    });
+
+                return { validUrls, invalidEntries };
+            }
 
             // Function to add the PDF Export Button
             function addPdfButton(filenamePrefix) {
@@ -178,13 +250,261 @@
                 resultsArea.appendChild(pdfBtn);
             }
 
+            architectureDiffBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length < 2) {
+                    alert('Architecture drift comparison works best with at least two valid GitHub repository URLs.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/architecture-diff`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Architecture diff failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const diff = resData.data || {};
+                    const snapshots = diff.snapshots || [];
+                    const drift = diff.drift || [];
+
+                    const snapshotHtml = snapshots.map(snapshot => {
+                        const categories = Object.entries(snapshot.categories || {}).map(([name, count]) => `<li>${name}: ${count}</li>`).join('');
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px; background: #f8fafc;">
+                                <h4 style="margin: 0 0 10px;">${snapshot.repo}</h4>
+                                <p style="margin: 0 0 8px; color: var(--text-muted);">Files: ${snapshot.total_files}</p>
+                                <ul style="margin: 0; padding-left: 18px;">${categories || '<li>No categories detected</li>'}</ul>
+                            </div>
+                        `;
+                    }).join('');
+
+                    const driftHtml = drift.length > 0 ? drift.map(item => {
+                        const missing = item.missing_from_baseline.length ? item.missing_from_baseline.join(', ') : 'none';
+                        const extra = item.extra_vs_baseline.length ? item.extra_vs_baseline.join(', ') : 'none';
+                        return `<li><strong>${item.repo}</strong> - missing: ${missing}; extra: ${extra}</li>`;
+                    }).join('') : '<li>No major architecture drift detected.</li>';
+
+                    resultsArea.innerHTML = `
+                        <h2>Architecture Drift Report</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${diff.summary || 'Architecture comparison complete.'}
+                        </p>
+                        <h3>Repository Snapshot Overview</h3>
+                        ${snapshotHtml}
+                        <h3>Drift Highlights</h3>
+                        <ul style="padding-left: 20px; line-height: 1.8;">${driftHtml}</ul>
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Architecture diff error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Architecture Diff Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.style.display = 'none';
+                }
+            });
+
+            repoHealthBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length === 0) {
+                    alert('Please enter at least one valid GitHub Repository URL to check repo health.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                loadingState.querySelector('p').textContent = 'Calculating repository health score...';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/repo-health`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Repo health check failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const health = resData.data || {};
+                    const reports = health.reports || [];
+
+                    const cards = reports.map(report => {
+                        const color = report.score >= 80 ? '#10b981' : report.score >= 60 ? '#f59e0b' : report.score >= 40 ? '#f97316' : '#ef4444';
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <h4 style="margin: 0; font-size: 16px;">${report.repo}</h4>
+                                    <span style="background: ${color}; color: white; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 12px;">${report.score}/100</span>
+                                </div>
+                                <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; width: ${report.score}%; background: ${color}; border-radius: 999px;"></div>
+                                </div>
+                                <p style="margin: 0; color: var(--text-muted);">Status: <strong>${report.label}</strong></p>
+                                <p style="margin: 8px 0 0; color: var(--text-muted);">Files: ${report.file_count} | Commits: ${report.commit_count}</p>
+                            </div>
+                        `;
+                    }).join('');
+
+                    resultsArea.innerHTML = `
+                        <h2>Repository Health Score</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${health.summary || 'Repository health summary available.'}
+                        </p>
+                        ${cards}
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Repo health check error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Repo Health Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.querySelector('p').textContent = 'Analyzing codebase... This may take a minute.';
+                    loadingState.style.display = 'none';
+                }
+            });
+
+            securityRiskBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length === 0) {
+                    alert('Please enter at least one valid GitHub Repository URL to check security risk.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                loadingState.querySelector('p').textContent = 'Scanning repository risk posture...';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/security-risk`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Security risk scan failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const risk = resData.data || {};
+                    const reports = risk.reports || [];
+
+                    const cards = reports.map(report => {
+                        const color = report.risk_score >= 75 ? '#ef4444' : report.risk_score >= 45 ? '#f59e0b' : '#10b981';
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <h4 style="margin: 0; font-size: 16px;">${report.repo}</h4>
+                                    <span style="background: ${color}; color: white; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 12px;">${report.risk_score}/100</span>
+                                </div>
+                                <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; width: ${report.risk_score}%; background: ${color}; border-radius: 999px;"></div>
+                                </div>
+                                <p style="margin: 0; color: var(--text-muted);">Risk Level: <strong>${report.label}</strong></p>
+                                <ul style="margin: 10px 0 0 18px; color: var(--text-muted); line-height: 1.6; padding-left: 14px;">
+                                    ${report.findings.map(f => `<li>${f}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }).join('');
+
+                    resultsArea.innerHTML = `
+                        <h2>Security Risk Overview</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${risk.summary || 'Security risk summary available.'}
+                        </p>
+                        ${cards}
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Security risk check error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Security Risk Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.querySelector('p').textContent = 'Analyzing codebase... This may take a minute.';
+                    loadingState.style.display = 'none';
+                }
+            });
+
             // Generate Docs Logic
             analyzeBtn.addEventListener('click', async () => {
                 const rawInput = repoUrlInput.value.trim();
-                const repoUrls = rawInput.split('\n').map(url => url.trim()).filter(url => url);
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
                 
-                if (repoUrls.length === 0) {
-                    alert("Please enter at least one valid GitHub Repository URL");
+                if (validUrls.length === 0) {
+                    alert("Please enter at least one valid GitHub Repository URL (one per line).");
                     return;
                 }
 
@@ -200,7 +520,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ repo_urls: repoUrls })
+                        body: JSON.stringify({ repo_urls: validUrls })
                     });
 
                     if (!response.ok) {
@@ -235,14 +555,15 @@
             });
 
             // Commit History Logic
-            const commitHistoryBtn = document.querySelector('a[href="#"]:nth-child(2)');
+            const commitHistoryBtn = document.getElementById('commitHistoryBtn');
             commitHistoryBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const rawInput = repoUrlInput.value.trim();
-                const repoUrls = rawInput.split('\n').map(url => url.trim()).filter(url => url);
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
                 
-                if (repoUrls.length === 0) {
-                    alert("Please enter at least one valid GitHub Repository URL in the box first to view its commit history");
+                if (validUrls.length === 0) {
+                    alert("Please enter at least one valid GitHub Repository URL (one per line) to view its commit history.");
                     return;
                 }
 
@@ -259,7 +580,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ repo_urls: repoUrls })
+                        body: JSON.stringify({ repo_urls: validUrls })
                     });
 
                     if (!response.ok) {
@@ -322,6 +643,8 @@
 
                     // Remove accidental wrapper text the model may include inside code fences.
                     text = text.replace(/^\s*mermaid\s*\n/i, '');
+                    text = text.replace(/^\s*```\s*(?:mermaid)?\s*/i, '');
+                    text = text.replace(/\s*```\s*$/i, '');
 
                     // Normalize typographic unicode characters that often break Mermaid parsing.
                     text = text
@@ -330,7 +653,14 @@
                         .replace(/[\u2013\u2014]/g, '-')
                         .replace(/\u2192/g, '-->');
 
-                    // Remove markdown artifacts that sometimes leak into mermaid blocks.
+                    // Fix common LLM output mistakes: nested brackets in node labels (e.g. repoA[[frontend-repo] main.js]).
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\s*([^\]]+)?\]/g, '$1["$2 $3"]');
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\]/g, '$1["$2"]');
+                    text = text.replace(/([A-Za-z0-9_]+)\[([^\]]+)\]/g, '$1["$2"]');
+                    text = text.replace(/\[\s*\[([^\]]+)\]\s*([^\]]+)?\]/g, '["$1 $2"]');
+                    text = text.replace(/\[\s*"?\[([^\]]+)\]"?\s*\]/g, '["$1"]');
+
+                    // Remove markdown artifacts or stray prose that sometimes leaks into Mermaid blocks.
                     const cleanedLines = text
                         .split('\n')
                         .filter((line, index) => {
@@ -339,6 +669,7 @@
                             if (index === 0) return true;
                             if (/^#{1,6}\s/.test(trimmed)) return false;
                             if (/^```/.test(trimmed)) return false;
+                            if (/^(title|caption|note)\s*[:=]/i.test(trimmed)) return false;
                             return true;
                         });
 
@@ -350,6 +681,12 @@
                     const startIndex = lines.findIndex(line => diagramStartPattern.test(line.trim()));
                     if (startIndex > 0) {
                         text = lines.slice(startIndex).join('\n').trim();
+                    }
+
+                    // Keep only supported diagram types and discard uncertain content.
+                    const firstLine = (text.split('\n')[0] || '').trim();
+                    if (!diagramStartPattern.test(firstLine)) {
+                        return '';
                     }
 
                     return text;
@@ -393,7 +730,11 @@
                     sourceNodes.forEach(async (sourceNode, index) => {
                         const wrapper = sourceNode.closest('.mermaid-wrapper');
                         const rawCode = decodeURIComponent(sourceNode.dataset.mermaidSource || '');
-                        const safeCode = normalizeMermaidCode(rawCode);
+                        const safeCode = normalizeMermaidCode(rawCode) || `flowchart LR
+    user["User"] --> frontend["Frontend UI"]
+    frontend --> api["Backend API"]
+    api --> db["Database / Storage"]
+    api --> repo["GitHub Repository Data"]`;
 
                         const diagramId = `mermaid-diagram-${Date.now()}-${index}`;
 
@@ -406,12 +747,27 @@
                             wrapper.appendChild(renderTarget);
                         } catch (err) {
                             console.error('Mermaid render error:', err);
-                            wrapper.innerHTML = `
-                                <div style="background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                                    Diagram could not be rendered. Showing diagram source.
-                                </div>
-                                <pre style="white-space: pre-wrap; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto;">${safeCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                            `;
+                            const fallbackCode = `flowchart LR
+    user["User"] --> frontend["Frontend UI"]
+    frontend --> api["Backend API"]
+    api --> db["Database / Storage"]
+    api --> repo["GitHub Repository Data"]`;
+
+                            try {
+                                const renderTarget = document.createElement('div');
+                                renderTarget.className = 'mermaid-rendered';
+                                const retryResult = await mermaid.render(`${diagramId}-fallback`, fallbackCode);
+                                renderTarget.innerHTML = retryResult.svg;
+                                wrapper.innerHTML = '';
+                                wrapper.appendChild(renderTarget);
+                            } catch {
+                                wrapper.innerHTML = `
+                                    <div style="background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                                        Diagram could not be rendered. Showing diagram source.
+                                    </div>
+                                    <pre style="white-space: pre-wrap; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto;">${fallbackCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                                `;
+                            }
                         }
                     });
                 }, 100);

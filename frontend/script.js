@@ -104,10 +104,5 @@ form.addEventListener("submit", function(e){
 
 // Handle Register Click
 registerBtn.addEventListener('click', () => {
-    // If the html form validation passes natively, or if we want to force it
-    if (form.checkValidity()) {
-        performAuthAction('/register', emailInput.value, passwordInput.value);
-    } else {
-        form.reportValidity();
-    }
+    window.location.href = "register.html";
 });
