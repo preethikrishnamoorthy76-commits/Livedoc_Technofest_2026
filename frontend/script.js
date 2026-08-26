@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'https://livedoc-technofest-2026.onrender.com';
 const TOKEN_STORAGE_KEY = 'livedoc_jwt_token';
 const EMAIL_STORAGE_KEY = 'livedoc_user_email';
 

@@ -140,7 +140,7 @@
             const loadingState = document.getElementById('loadingState');
             const invalidUrlWarning = document.getElementById('invalidUrlWarning');
             const commitStatusBanner = document.getElementById('commitStatusBanner');
-            const API_BASE_URL = 'http://127.0.0.1:8000';
+            const API_BASE_URL = 'https://livedoc-technofest-2026.onrender.com';
 
             // --- 5 Completely Independent Section Containers ---
             const views = {
@@ -535,7 +535,7 @@
                     console.error(`${sectionKey} fetch error:`, error);
                     let errMessage = error.message || 'An unexpected error occurred.';
                     if (errMessage.includes('Failed to fetch') || errMessage.includes('NetworkError')) {
-                        errMessage = 'Unable to connect to the LiveDoc backend API (http://127.0.0.1:8000). Please ensure your Python backend server is running.';
+                        errMessage = 'Unable to connect to the LiveDoc backend API. Please ensure the deployed backend server is running.';
                     }
                     views[sectionKey].innerHTML = `
                         <div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 20px; border-radius: 10px; color: #991b1b;">
