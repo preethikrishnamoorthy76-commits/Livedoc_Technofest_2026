@@ -1,20 +1,12 @@
-<<<<<<< HEAD
 import os
 import json
 import httpx
 from typing import Any, Dict, List, Optional
 from openai import AsyncOpenAI, APIConnectionError, APIError
-=======
-import google.generativeai as genai
-import os
-import json
-from typing import Any, Dict, List, Optional
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
 
 class AIService:
     def __init__(self):
-<<<<<<< HEAD
         api_key = os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
         if not api_key or api_key.strip() in ("your_grok_api_key_here", "your_api_key_here", "YOUR_GROK_API_KEY"):
             raise ValueError("GROK_API_KEY is not configured in backend/.env. Please set your xAI API key from https://console.x.ai.")
@@ -28,15 +20,6 @@ class AIService:
 
         http_client = httpx.AsyncClient(verify=verify_ssl, timeout=httpx.Timeout(120.0, connect=30.0))
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url, http_client=http_client)
-=======
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY environment variable is not set")
-            
-        genai.configure(api_key=api_key)
-        # Using Gemini 2.5 Flash as requested, prefixed with models/
-        self.model = genai.GenerativeModel('models/gemini-2.5-flash')
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
     async def generate_documentation(self, codebase_analysis: list[dict], repos_context: str) -> str:
         # Prepare the prompt payload based on what the parser extracted
@@ -58,11 +41,7 @@ Here is the breakdown of the files across the system:
 
         prompt += """
 Based on the above architecture, please generate a comprehensive README and internal technical documentation for this system.
-<<<<<<< HEAD
 Your output MUST format beautifully in Markdown with thorough, multi-paragraph explanations for each section.
-=======
-Your output MUST format beautifully in Markdown.
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
 CRITICAL for Mermaid.js (version 11.12.3 compatibility):
 - You MUST include exactly two separate Mermaid diagrams, and both diagrams MUST render without errors.
@@ -94,7 +73,6 @@ Structure:
 5. ## Key Functions / APIs
 """
 
-<<<<<<< HEAD
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -113,10 +91,6 @@ Structure:
             ) from exc
         except APIError as exc:
             raise ValueError(f"Grok API returned an error: {exc.message}") from exc
-=======
-        response = self.model.generate_content(prompt)
-        return response.text
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
     async def generate_structured_analysis(
         self,
@@ -124,16 +98,7 @@ Structure:
         repository_structure: List[Dict[str, Any]],
         commit_history_summary: Optional[str] = None,
     ) -> Dict[str, Any]:
-<<<<<<< HEAD
         """Generate a structured JSON analysis for a repository."""
-=======
-        """Generate a structured JSON analysis for a repository.
-
-        Security:
-        - Callers MUST only pass summarized metadata in `repository_structure`.
-        - Raw source code contents must NOT be included in the metadata.
-        """
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
         structure_json = json.dumps(repository_structure, indent=2)
 
@@ -169,7 +134,6 @@ CRITICAL OUTPUT REQUIREMENTS:
 - "dependency_graph_mermaid" MUST contain ONLY valid Mermaid syntax, starting with one of: flowchart, graph, or sequenceDiagram.
 """
 
-<<<<<<< HEAD
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -188,16 +152,11 @@ CRITICAL OUTPUT REQUIREMENTS:
             ) from exc
         except APIError as exc:
             raise ValueError(f"Grok API returned an error: {exc.message}") from exc
-=======
-        response = self.model.generate_content(prompt)
-        raw_text = (response.text or "").strip()
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
         # Best-effort: try to parse the response as JSON directly.
         try:
             parsed = json.loads(raw_text)
         except json.JSONDecodeError as exc:
-<<<<<<< HEAD
             cleaned = raw_text.strip()
             if cleaned.startswith("```"):
                 lines = cleaned.splitlines()
@@ -206,13 +165,6 @@ CRITICAL OUTPUT REQUIREMENTS:
                 if lines and lines[-1].startswith("```"):
                     lines = lines[:-1]
                 cleaned = "\n".join(lines).strip()
-=======
-            # If the model accidentally wraps JSON in code fences or adds extra text,
-            # attempt a simple fallback by stripping common fence markers.
-            cleaned = raw_text.strip()
-            if cleaned.startswith("```") and cleaned.endswith("```"):
-                cleaned = cleaned.strip("`")
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             try:
                 parsed = json.loads(cleaned)
             except json.JSONDecodeError:
@@ -231,7 +183,6 @@ CRITICAL OUTPUT REQUIREMENTS:
         return parsed
 
     async def summarize_commits(self, repos_context: str, commit_messages: list[str]) -> str:
-<<<<<<< HEAD
         """Use Grok to summarize the development history from recent commit messages into a detailed technical report."""
         if not commit_messages:
             return "No commits found for these repositories."
@@ -432,33 +383,3 @@ Provide deep, professional security insights written in complete paragraphs.
                 "### Security Remediation Roadmap\n"
                 "Implement automated static code analysis, secret scanning, and regular security patching."
             )
-=======
-        """Use Gemini to summarize the development history from recent commit messages."""
-        if not commit_messages:
-            return "No commits found for these repositories."
-
-        commits_block = "\n".join(f"- {msg}" for msg in commit_messages)
-
-        prompt = f"""
-You are an expert software project historian.
-You are analyzing the joint commit history of the following repositories: {repos_context}
-
-Here is the aggregated commit history (from newest to oldest).
-Each line includes the repository name, commit date, author, and message:
-
-{commits_block}
-
-Based on these commits across all provided repositories, write a concise, human-readable Merged Summary of the overall system's development history and major changes over time.
-If multiple repositories are present, explain how development across them coordinated (e.g., "Frontend UI updates were followed by corresponding backend API changes").
-
-Focus on:
-- Key features added or removed across the system
-- Major refactors or architectural changes
-- Notable bug fixes or performance improvements
-
-Your response should be plain text (1–3 short paragraphs or a brief bullet list), without any Markdown headings or code blocks.
-"""
-
-        response = self.model.generate_content(prompt)
-        return (response.text or "").strip()
->>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
