@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 class GitHubService:
     def __init__(self):
+<<<<<<< HEAD
         self.github_token = os.getenv("GITHUB_API_KEY") or os.getenv("GITHUB_TOKEN")
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
@@ -15,6 +16,14 @@ class GitHubService:
         if self.github_token and self.github_token.strip():
             token_val = self.github_token.strip()
             self.headers["Authorization"] = f"token {token_val}"
+=======
+        self.github_token = os.getenv("GITHUB_API_KEY")
+        self.headers = {
+            "Accept": "application/vnd.github.v3+json",
+        }
+        if self.github_token:
+            self.headers["Authorization"] = f"token {self.github_token}"
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
         self.supported_extensions = ['.py', '.js', '.ts', '.html', '.css', '.go', '.java', '.cpp']
 
@@ -40,6 +49,7 @@ class GitHubService:
 
         raise ValueError("Unable to download repository archive from GitHub")
             
+<<<<<<< HEAD
     def _parse_repo_url(self, url: str) -> tuple[str, str, str]:
         parsed = urlparse(url)
         path_parts = [p for p in parsed.path.strip("/").split("/") if p]
@@ -58,6 +68,20 @@ class GitHubService:
         owner, repo, subpath = self._parse_repo_url(repo_url)
 
         async with httpx.AsyncClient(timeout=30.0) as client:
+=======
+    def _parse_repo_url(self, url: str) -> tuple[str, str]:
+        # Handle https://github.com/owner/repo
+        parsed = urlparse(url)
+        path_parts = parsed.path.strip("/").split("/")
+        if len(path_parts) >= 2:
+            return path_parts[0], path_parts[1]
+        raise ValueError("Invalid GitHub URL format. Use https://github.com/owner/repo")
+
+    async def fetch_repo_contents(self, repo_url: str) -> list[dict]:
+        owner, repo = self._parse_repo_url(repo_url)
+
+        async with httpx.AsyncClient() as client:
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             try:
                 repo_url_api = f"https://api.github.com/repos/{owner}/{repo}"
                 repo_data = await self._get_json(client, repo_url_api)
@@ -84,10 +108,13 @@ class GitHubService:
                         continue
 
                     path = item.get("path", "")
+<<<<<<< HEAD
                     if subpath:
                         if not (path == subpath or path.startswith(subpath + "/")):
                             continue
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                     ext = os.path.splitext(path)[1]
                     if ext not in self.supported_extensions:
                         continue
@@ -141,26 +168,51 @@ class GitHubService:
             return response.text
 
     async def fetch_recent_commits(self, repo_url: str, limit: int = 20) -> list[dict]:
+<<<<<<< HEAD
         """Fetch recent commits for a repository using the GitHub Commits API."""
         owner, repo, _ = self._parse_repo_url(repo_url)
         api_url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page={limit}"
 
         async with httpx.AsyncClient(timeout=30.0) as client:
+=======
+        """Fetch recent commits for a repository using the GitHub Commits API.
+
+        Returns the raw commit JSON objects (caller can extract messages, authors, etc.).
+        """
+        owner, repo = self._parse_repo_url(repo_url)
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page={limit}"
+
+        async with httpx.AsyncClient() as client:
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             data = await self._get_json(client, api_url)
             return data if isinstance(data, list) else []
 
     async def fetch_all_commits(self, repo_url: str, per_page: int = 100, max_pages: int = 10) -> list[dict]:
+<<<<<<< HEAD
         """Fetch commit history from the beginning using GitHub's paginated Commits API."""
         owner, repo, _ = self._parse_repo_url(repo_url)
 
         all_commits: list[dict] = []
 
         async with httpx.AsyncClient(timeout=30.0) as client:
+=======
+        """Fetch commit history from the beginning using GitHub's paginated Commits API.
+
+        This walks result pages until there are no more commits or max_pages is reached,
+        to avoid unbounded requests on very large repositories.
+        """
+        owner, repo = self._parse_repo_url(repo_url)
+
+        all_commits: list[dict] = []
+
+        async with httpx.AsyncClient() as client:
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             for page in range(1, max_pages + 1):
                 api_url = (
                     f"https://api.github.com/repos/{owner}/{repo}/commits"
                     f"?per_page={per_page}&page={page}"
                 )
+<<<<<<< HEAD
                 try:
                     data = await self._get_json(client, api_url)
                     batch = data if isinstance(data, list) else []
@@ -175,3 +227,17 @@ class GitHubService:
         return all_commits
 
         return all_commits
+=======
+                data = await self._get_json(client, api_url)
+                batch = data if isinstance(data, list) else []
+                if not batch:
+                    break
+
+                all_commits.extend(batch)
+
+                # If we received fewer than per_page items, there are no more pages.
+                if len(batch) < per_page:
+                    break
+
+        return all_commits
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb

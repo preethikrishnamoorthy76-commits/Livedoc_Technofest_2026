@@ -294,6 +294,7 @@ footer a:hover {
     }
 }
 
+<<<<<<< HEAD
 /* Markdown & Technical Report Rendering Styles for Section Views */
 .section-view {
     width: 100%;
@@ -431,10 +432,53 @@ footer a:hover {
 
 /* --- Code & Pre Blocks --- */
 .section-view code {
+=======
+/* Markdown Rendering Styles for Dashboard */
+#resultsArea {
+    text-align: justify; /* Justify text as requested */
+    color: var(--text-main);
+    line-height: 1.7;
+    font-size: 16px;
+}
+
+#resultsArea h1, 
+#resultsArea h2, 
+#resultsArea h3, 
+#resultsArea h4, 
+#resultsArea h5, 
+#resultsArea h6 {
+    text-align: left; /* Keep headers left aligned */
+    font-size: 18px; /* Force all headers to be consistent size as requested */
+    font-weight: 700;
+    margin-top: 25px;
+    margin-bottom: 12px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+#resultsArea p {
+    margin-bottom: 16px;
+    font-size: 16px; /* Ensure uniform size */
+}
+
+#resultsArea ul, #resultsArea ol {
+    margin-bottom: 16px;
+    padding-left: 24px;
+    font-size: 16px;
+}
+
+#resultsArea li {
+    margin-bottom: 8px;
+}
+
+#resultsArea code {
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     font-family: 'Courier New', Courier, monospace;
     background-color: var(--secondary-color);
     padding: 3px 6px;
     border-radius: 4px;
+<<<<<<< HEAD
     font-size: 14px;
     color: var(--primary-hover);
     word-break: break-word;
@@ -451,11 +495,40 @@ footer a:hover {
 }
 
 .section-view pre code {
+=======
+    font-size: 15px; /* Prevent small inline code sizes */
+    color: var(--primary-hover);
+}
+
+#resultsArea pre {
+    background-color: #1e293b; /* Dark mode code blocks */
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    text-align: left; /* Don't justify code blocks */
+}
+
+#resultsArea pre code {
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     background-color: transparent;
     color: inherit;
     padding: 0;
     font-size: 14px;
+<<<<<<< HEAD
     word-break: normal;
+=======
+}
+
+#resultsArea a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+#resultsArea a:hover {
+    text-decoration: underline;
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 }
 
 /* Print/PDF Export Specific Styles to Prevent Awkward Page Breaks */

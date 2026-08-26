@@ -1,6 +1,10 @@
 fastapi
 uvicorn[standard]
+<<<<<<< HEAD
 openai
+=======
+google-generativeai
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 httpx
 tree-sitter
 tree-sitter-python

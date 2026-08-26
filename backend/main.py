@@ -130,6 +130,7 @@ def _normalize_repo_urls(repo_urls: list[str]) -> list[str]:
     return normalized
 
 
+<<<<<<< HEAD
 async def _get_latest_commit_shas(repo_urls: list[str]) -> dict[str, str | None]:
     results = await asyncio.gather(
         *[github_service.fetch_recent_commits(url, limit=1) for url in repo_urls],
@@ -144,6 +145,8 @@ async def _get_latest_commit_shas(repo_urls: list[str]) -> dict[str, str | None]
     return latest_shas
 
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 def _classify_repo_path(path: str) -> str:
     lowered = path.lower()
     if any(token in lowered for token in ["frontend", "ui", "components", "templates", "public"]):
@@ -209,8 +212,12 @@ async def _get_architecture_diff(repo_urls: list[str]) -> dict:
     if not repo_snapshots:
         raise ValueError("No repository structure could be analyzed.")
 
+<<<<<<< HEAD
     valid_categories = [set(s.get("categories", {}).keys()) for s in repo_snapshots if s.get("categories")]
     common_categories = set.intersection(*valid_categories) if valid_categories else set()
+=======
+    common_categories = set.intersection(*(set(snapshot.get("categories", {}).keys()) for snapshot in repo_snapshots if snapshot.get("categories")))
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     baseline = repo_snapshots[0].get("categories", {})
     drift_items = []
     for snapshot in repo_snapshots:
@@ -224,8 +231,11 @@ async def _get_architecture_diff(repo_urls: list[str]) -> dict:
                 "extra_vs_baseline": extra,
             })
 
+<<<<<<< HEAD
     ai_report = await ai_service.generate_architecture_drift_analysis(repo_snapshots, drift_items)
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     return {
         "status": "success",
         "repo_count": len(normalized),
@@ -233,7 +243,10 @@ async def _get_architecture_diff(repo_urls: list[str]) -> dict:
         "baseline_repo": normalized[0],
         "snapshots": repo_snapshots,
         "drift": drift_items,
+<<<<<<< HEAD
         "ai_report": ai_report,
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         "summary": (
             f"Compared {len(normalized)} repositories to detect architecture drift. "
             f"Common structural categories: {', '.join(sorted(common_categories)) if common_categories else 'none'}"
@@ -330,14 +343,20 @@ async def _get_repo_health(repo_urls: list[str]) -> dict:
         reports.append(_score_repo_health(repo_url, file_count, commit_count, latest_commit_date))
 
     avg_score = round(sum(item["score"] for item in reports) / len(reports)) if reports else 0
+<<<<<<< HEAD
     ai_report = await ai_service.generate_repo_health_analysis(reports, avg_score)
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     return {
         "status": "success",
         "repo_count": len(normalized),
         "overall_score": avg_score,
         "summary": f"Average repository health score across {len(normalized)} repositories: {avg_score}/100.",
+<<<<<<< HEAD
         "ai_report": ai_report,
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         "reports": reports,
     }
 
@@ -432,14 +451,20 @@ async def _get_security_risk(repo_urls: list[str]) -> dict:
         reports.append(_score_security_risk(repo_url, file_count, commit_count, latest_commit_date))
 
     avg_risk = round(sum(item["risk_score"] for item in reports) / len(reports)) if reports else 0
+<<<<<<< HEAD
     ai_report = await ai_service.generate_security_risk_analysis(reports, avg_risk)
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
     return {
         "status": "success",
         "repo_count": len(normalized),
         "overall_risk_score": avg_risk,
         "summary": f"Average security risk score across {len(normalized)} repositories: {avg_risk}/100.",
+<<<<<<< HEAD
         "ai_report": ai_report,
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         "reports": reports,
     }
 
@@ -466,14 +491,21 @@ async def _analyze_and_store(repo_urls: list[str], tenant_id: str = None):
         if not codebase_analysis: return
         repos_context_string = ", ".join(repo_urls)
         documentation = await ai_service.generate_documentation(codebase_analysis, repos_context_string)
+<<<<<<< HEAD
         latest_commit_shas = await _get_latest_commit_shas(repo_urls)
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         docs_collection = db.get_generated_docs_collection()
         doc_entry = {
             "tenant_id": tenant_id,
             "repo_urls": repo_urls,
             "documentation": documentation,
+<<<<<<< HEAD
             "created_at": datetime.utcnow(),
             "latest_commit_shas": latest_commit_shas,
+=======
+            "created_at": datetime.utcnow()
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         }
         await docs_collection.insert_one(doc_entry)
     except Exception as e:
@@ -540,6 +572,7 @@ async def analyze_repo(payload: AnalyzeRequest, request: Request):
         )
         for repo_url, files in zip(repo_urls, all_repo_files):
             if isinstance(files, Exception) or not files: continue
+<<<<<<< HEAD
             files_to_process = files[:25]
             download_tasks = [github_service.fetch_file_content(f["download_url"]) for f in files_to_process if f.get("download_url")]
             raw_codes = await asyncio.gather(*download_tasks, return_exceptions=True)
@@ -552,16 +585,31 @@ async def analyze_repo(payload: AnalyzeRequest, request: Request):
                     codebase_analysis.append(parsed_data)
                 except Exception as e:
                     pass
+=======
+            for file in files:
+                try:
+                    raw_code = await github_service.fetch_file_content(file["download_url"])
+                    parsed_data = parser_service.parse_file(file["name"], raw_code)
+                    parsed_data["source_repo"] = repo_url
+                    codebase_analysis.append(parsed_data)
+                except Exception as e: pass
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         if not codebase_analysis:
             return {"status": "error", "message": "No supported source files could be parsed from the provided repositories."}
             
         repos_context_string = ", ".join(repo_urls)
         documentation = await ai_service.generate_documentation(codebase_analysis, repos_context_string)
+<<<<<<< HEAD
         latest_commit_shas = await _get_latest_commit_shas(repo_urls)
         docs_collection = db.get_generated_docs_collection()
         doc_entry = {
             "tenant_id": tenant_id, "repo_urls": repo_urls, "documentation": documentation,
             "created_at": datetime.utcnow(), "latest_commit_shas": latest_commit_shas
+=======
+        docs_collection = db.get_generated_docs_collection()
+        doc_entry = {
+            "tenant_id": tenant_id, "repo_urls": repo_urls, "documentation": documentation, "created_at": datetime.utcnow()
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         }
         await docs_collection.insert_one(doc_entry)
         return {"status": "success", "message": "Documentation generated successfully", "data": {"markdown": documentation}}
@@ -667,6 +715,7 @@ async def get_commit_history(payload: CommitHistoryRequest, request: Request):
         return {"commit_summary": f"Server Error: {str(e)}"}
 
 
+<<<<<<< HEAD
 @app.post("/commit-status")
 async def get_commit_status(payload: CommitHistoryRequest, request: Request):
     tenant_id = getattr(request.state, "tenant_id", None)
@@ -693,6 +742,8 @@ async def get_commit_status(payload: CommitHistoryRequest, request: Request):
         return {"status": "error", "message": str(exc)}
 
 
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 @app.post("/api/trigger-update")
 async def trigger_update(payload: TriggerUpdateRequest, background_tasks: BackgroundTasks):
     """

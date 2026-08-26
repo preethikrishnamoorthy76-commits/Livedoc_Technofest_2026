@@ -18,7 +18,11 @@
         </div>
 
         <nav style="display: flex; flex-direction: column; gap: 10px;">
+<<<<<<< HEAD
             <a href="#" id="dashboardNavBtn" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; background: var(--bg-color); color: var(--primary-color); text-decoration: none; font-weight: 600;">
+=======
+            <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; background: var(--bg-color); color: var(--primary-color); text-decoration: none; font-weight: 600;">
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
@@ -59,7 +63,11 @@
         </header>
 
         <!-- Analyze Tool Container -->
+<<<<<<< HEAD
         <div style="background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color); max-width: 980px;">
+=======
+        <div style="background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color); max-width: 800px;">
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             <div class="input-group" style="margin-bottom: 20px;">
                 <label style="font-weight: 600; color: var(--text-main); margin-bottom: 10px; display: block;">GitHub Repository URLs (One per line)</label>
                 <div style="display: flex; gap: 10px; align-items: stretch;">
@@ -72,7 +80,10 @@
                 <div id="invalidUrlWarning" style="display: none; margin-top: 12px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3b12; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.5;">
                     <strong>Invalid URL found.</strong> Some entries were ignored because they are not valid GitHub repository links.
                 </div>
+<<<<<<< HEAD
                 <div id="commitStatusBanner" style="display: none; margin-top: 12px; border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5;"></div>
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             </div>
             
             <div id="loadingState" style="display: none; text-align: center; padding: 40px 0;">
@@ -80,12 +91,17 @@
                 <p style="color: var(--text-muted); margin-top: 15px; font-weight: 500;">Analyzing codebase... This may take a minute.</p>
             </div>
 
+<<<<<<< HEAD
             <div id="viewsContainer" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 <div id="view-dashboard" class="section-view" style="display: block;"></div>
                 <div id="view-architectureDiff" class="section-view" style="display: none;"></div>
                 <div id="view-repoHealth" class="section-view" style="display: none;"></div>
                 <div id="view-securityRisk" class="section-view" style="display: none;"></div>
                 <div id="view-commitHistory" class="section-view" style="display: none;"></div>
+=======
+            <div id="resultsArea" style="display: none; margin-top: 30px; padding-top: 30px; border-top: 1px solid var(--border-color);">
+                <!-- Results will be injected here -->
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             </div>
         </div>
     </main>
@@ -96,6 +112,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <script>
+<<<<<<< HEAD
         // Init Mermaid with suppressed automatic error rendering
         try {
             mermaid.initialize({
@@ -119,12 +136,35 @@
             }
 
             document.getElementById('userEmailDisplay').textContent = email;
+=======
+        // Init Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default'
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('livedoc_jwt_token');
+            const email = localStorage.getItem('livedoc_user_email');
+            
+            // Redirect back to login if no token is found
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Display user email
+            if (email) {
+                document.getElementById('userEmailDisplay').textContent = email;
+            }
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
 
             // Handle Logout
             document.getElementById('logoutBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.removeItem('livedoc_jwt_token');
                 localStorage.removeItem('livedoc_user_email');
+<<<<<<< HEAD
                 sessionStorage.removeItem('livedoc_dashboard_cache');
                 window.location.href = 'index.html';
             });
@@ -303,6 +343,21 @@
                 });
             }
 
+=======
+                window.location.href = 'index.html';
+            });
+            
+            const analyzeBtn = document.getElementById('analyzeSubmitBtn');
+            const architectureDiffBtn = document.getElementById('architectureDiffBtn');
+            const repoHealthBtn = document.getElementById('repoHealthBtn');
+            const securityRiskBtn = document.getElementById('securityRiskBtn');
+            const repoUrlInput = document.getElementById('repoUrlInput');
+            const loadingState = document.getElementById('loadingState');
+            const resultsArea = document.getElementById('resultsArea');
+            const invalidUrlWarning = document.getElementById('invalidUrlWarning');
+            const API_BASE_URL = 'http://127.0.0.1:8000';
+
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
             function showInvalidUrlWarning(invalidEntries) {
                 const textareaStyle = repoUrlInput.style;
 
@@ -329,7 +384,11 @@
                 const validUrls = [];
                 const invalidEntries = [];
 
+<<<<<<< HEAD
                 (rawValue || '')
+=======
+                rawValue
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                     .split('\n')
                     .map(url => url.trim())
                     .filter(Boolean)
@@ -356,7 +415,12 @@
                 return { validUrls, invalidEntries };
             }
 
+<<<<<<< HEAD
             function addPdfButton(containerEl, filenamePrefix) {
+=======
+            // Function to add the PDF Export Button
+            function addPdfButton(filenamePrefix) {
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                 const pdfBtn = document.createElement('button');
                 pdfBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">download</span> Export PDF';
                 pdfBtn.className = 'login-btn';
@@ -366,6 +430,7 @@
                 pdfBtn.style.padding = '0 20px';
                 pdfBtn.style.display = 'inline-flex';
                 pdfBtn.style.gap = '8px';
+<<<<<<< HEAD
                 pdfBtn.style.backgroundColor = '#10b981';
                 
                 pdfBtn.addEventListener('click', () => {
@@ -376,17 +441,53 @@
                     const mainContainer = document.querySelector('main');
                     const inputGroup = document.querySelector('.input-group');
                     
+=======
+                pdfBtn.style.backgroundColor = '#10b981'; // Green color for download
+                
+                pdfBtn.addEventListener('click', () => {
+                    // We use native browser printing focused on the results area
+                    // This perfectly respects CSS page breaks and captures all content
+
+                    // 1. Hide everything else on the page temporarily
+                    const originalTitle = document.title;
+                    document.title = filenamePrefix; // Sets the default save filename
+                    const sidebar = document.querySelector('aside');
+                    const header = document.querySelector('header');
+                    const mainContainer = document.querySelector('main');
+                    const analyzeToolContainer = document.querySelector('.input-group').parentElement;
+                    const inputGroup = document.querySelector('.input-group');
+                    
+                    // Hide UI elements
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                     sidebar.style.display = 'none';
                     header.style.display = 'none';
                     inputGroup.style.display = 'none';
                     pdfBtn.style.display = 'none';
                     
+<<<<<<< HEAD
                     document.body.style.background = 'white';
                     mainContainer.style.marginLeft = '0';
                     mainContainer.style.padding = '0';
 
                     window.print();
 
+=======
+                    // Adjust layout for printing
+                    document.body.style.background = 'white';
+                    mainContainer.style.marginLeft = '0';
+                    mainContainer.style.padding = '0';
+                    analyzeToolContainer.style.boxShadow = 'none';
+                    analyzeToolContainer.style.border = 'none';
+                    analyzeToolContainer.style.maxWidth = '100%';
+                    resultsArea.style.borderTop = 'none';
+                    resultsArea.style.marginTop = '0';
+                    resultsArea.style.paddingTop = '0';
+
+                    // Trigger Print Dialog
+                    window.print();
+
+                    // Restore everything back to normal
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                     document.title = originalTitle;
                     sidebar.style.display = 'block';
                     header.style.display = 'flex';
@@ -396,6 +497,7 @@
                     document.body.style.background = 'var(--bg-color)';
                     mainContainer.style.marginLeft = '280px';
                     mainContainer.style.padding = '40px';
+<<<<<<< HEAD
                 });
 
                 containerEl.appendChild(pdfBtn);
@@ -442,10 +544,26 @@
             async function triggerSectionFetch(sectionKey, forceFetch = false) {
                 switchSection(sectionKey);
 
+=======
+                    analyzeToolContainer.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)';
+                    analyzeToolContainer.style.border = '1px solid var(--border-color)';
+                    analyzeToolContainer.style.maxWidth = '800px';
+                    resultsArea.style.borderTop = '1px solid var(--border-color)';
+                    resultsArea.style.marginTop = '30px';
+                    resultsArea.style.paddingTop = '30px';
+                });
+
+                resultsArea.appendChild(pdfBtn);
+            }
+
+            architectureDiffBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                 const rawInput = repoUrlInput.value.trim();
                 const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
                 showInvalidUrlWarning(invalidEntries);
 
+<<<<<<< HEAD
                 if (validUrls.length === 0) {
                     alert('Please enter at least one valid GitHub Repository URL.');
                     return;
@@ -485,12 +603,30 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${currentToken}`
+=======
+                if (validUrls.length < 2) {
+                    alert('Architecture drift comparison works best with at least two valid GitHub repository URLs.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/architecture-diff`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                         },
                         body: JSON.stringify({ repo_urls: validUrls })
                     });
 
                     if (!response.ok) {
                         if (response.status === 401) {
+<<<<<<< HEAD
                             localStorage.removeItem('livedoc_jwt_token');
                             localStorage.removeItem('livedoc_user_email');
                             sessionStorage.removeItem('livedoc_dashboard_cache');
@@ -551,10 +687,63 @@
                     document.getElementById(`retry-${sectionKey}-btn`)?.addEventListener('click', () => {
                         triggerSectionFetch(sectionKey, true);
                     });
+=======
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Architecture diff failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const diff = resData.data || {};
+                    const snapshots = diff.snapshots || [];
+                    const drift = diff.drift || [];
+
+                    const snapshotHtml = snapshots.map(snapshot => {
+                        const categories = Object.entries(snapshot.categories || {}).map(([name, count]) => `<li>${name}: ${count}</li>`).join('');
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px; background: #f8fafc;">
+                                <h4 style="margin: 0 0 10px;">${snapshot.repo}</h4>
+                                <p style="margin: 0 0 8px; color: var(--text-muted);">Files: ${snapshot.total_files}</p>
+                                <ul style="margin: 0; padding-left: 18px;">${categories || '<li>No categories detected</li>'}</ul>
+                            </div>
+                        `;
+                    }).join('');
+
+                    const driftHtml = drift.length > 0 ? drift.map(item => {
+                        const missing = item.missing_from_baseline.length ? item.missing_from_baseline.join(', ') : 'none';
+                        const extra = item.extra_vs_baseline.length ? item.extra_vs_baseline.join(', ') : 'none';
+                        return `<li><strong>${item.repo}</strong> - missing: ${missing}; extra: ${extra}</li>`;
+                    }).join('') : '<li>No major architecture drift detected.</li>';
+
+                    resultsArea.innerHTML = `
+                        <h2>Architecture Drift Report</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${diff.summary || 'Architecture comparison complete.'}
+                        </p>
+                        <h3>Repository Snapshot Overview</h3>
+                        ${snapshotHtml}
+                        <h3>Drift Highlights</h3>
+                        <ul style="padding-left: 20px; line-height: 1.8;">${driftHtml}</ul>
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Architecture diff error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Architecture Diff Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                 } finally {
                     analyzeBtn.disabled = false;
                     loadingState.style.display = 'none';
                 }
+<<<<<<< HEAD
             }
 
             // --- 1. Isolated Dashboard Renderer ---
@@ -567,12 +756,331 @@
                     text = text.replace(/^\s*mermaid\s*\n/i, '');
                     text = text.replace(/^\s*```\s*(?:mermaid)?\s*/i, '');
                     text = text.replace(/\s*```\s*$/i, '');
+=======
+            });
+
+            repoHealthBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length === 0) {
+                    alert('Please enter at least one valid GitHub Repository URL to check repo health.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                loadingState.querySelector('p').textContent = 'Calculating repository health score...';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/repo-health`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Repo health check failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const health = resData.data || {};
+                    const reports = health.reports || [];
+
+                    const cards = reports.map(report => {
+                        const color = report.score >= 80 ? '#10b981' : report.score >= 60 ? '#f59e0b' : report.score >= 40 ? '#f97316' : '#ef4444';
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <h4 style="margin: 0; font-size: 16px;">${report.repo}</h4>
+                                    <span style="background: ${color}; color: white; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 12px;">${report.score}/100</span>
+                                </div>
+                                <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; width: ${report.score}%; background: ${color}; border-radius: 999px;"></div>
+                                </div>
+                                <p style="margin: 0; color: var(--text-muted);">Status: <strong>${report.label}</strong></p>
+                                <p style="margin: 8px 0 0; color: var(--text-muted);">Files: ${report.file_count} | Commits: ${report.commit_count}</p>
+                            </div>
+                        `;
+                    }).join('');
+
+                    resultsArea.innerHTML = `
+                        <h2>Repository Health Score</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${health.summary || 'Repository health summary available.'}
+                        </p>
+                        ${cards}
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Repo health check error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Repo Health Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.querySelector('p').textContent = 'Analyzing codebase... This may take a minute.';
+                    loadingState.style.display = 'none';
+                }
+            });
+
+            securityRiskBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+
+                if (validUrls.length === 0) {
+                    alert('Please enter at least one valid GitHub Repository URL to check security risk.');
+                    return;
+                }
+
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                loadingState.querySelector('p').textContent = 'Scanning repository risk posture...';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/security-risk`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Security risk scan failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    const risk = resData.data || {};
+                    const reports = risk.reports || [];
+
+                    const cards = reports.map(report => {
+                        const color = report.risk_score >= 75 ? '#ef4444' : report.risk_score >= 45 ? '#f59e0b' : '#10b981';
+                        return `
+                            <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <h4 style="margin: 0; font-size: 16px;">${report.repo}</h4>
+                                    <span style="background: ${color}; color: white; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 12px;">${report.risk_score}/100</span>
+                                </div>
+                                <div style="height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; width: ${report.risk_score}%; background: ${color}; border-radius: 999px;"></div>
+                                </div>
+                                <p style="margin: 0; color: var(--text-muted);">Risk Level: <strong>${report.label}</strong></p>
+                                <ul style="margin: 10px 0 0 18px; color: var(--text-muted); line-height: 1.6; padding-left: 14px;">
+                                    ${report.findings.map(f => `<li>${f}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }).join('');
+
+                    resultsArea.innerHTML = `
+                        <h2>Security Risk Overview</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 20px; padding: 16px; background: var(--secondary-color); border-radius: 8px;">
+                            ${risk.summary || 'Security risk summary available.'}
+                        </p>
+                        ${cards}
+                    `;
+                    resultsArea.style.display = 'block';
+                } catch (error) {
+                    console.error('Security risk check error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Security Risk Error</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.querySelector('p').textContent = 'Analyzing codebase... This may take a minute.';
+                    loadingState.style.display = 'none';
+                }
+            });
+
+            // Generate Docs Logic
+            analyzeBtn.addEventListener('click', async () => {
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+                
+                if (validUrls.length === 0) {
+                    alert("Please enter at least one valid GitHub Repository URL (one per line).");
+                    return;
+                }
+
+                // Show loading
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/analyze`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Analysis failed with status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+
+                    if (resData.status === 'error') {
+                        throw new Error(resData.message);
+                    }
+
+                    // Render successful markdown documentation
+                    renderMarkdownOutput(resData.data.markdown);
+                    addPdfButton('LiveDoc_Code_Analysis');
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Error Generating Docs</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.style.display = 'none';
+                }
+            });
+
+            // Commit History Logic
+            const commitHistoryBtn = document.getElementById('commitHistoryBtn');
+            commitHistoryBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const rawInput = repoUrlInput.value.trim();
+                const { validUrls, invalidEntries } = parseRepoUrls(rawInput);
+                showInvalidUrlWarning(invalidEntries);
+                
+                if (validUrls.length === 0) {
+                    alert("Please enter at least one valid GitHub Repository URL (one per line) to view its commit history.");
+                    return;
+                }
+
+                // Show loading
+                analyzeBtn.disabled = true;
+                loadingState.style.display = 'block';
+                loadingState.querySelector('p').textContent = 'Fetching and summarizing commit history...';
+                resultsArea.style.display = 'none';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/commit-history`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ repo_urls: validUrls })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = 'index.html';
+                            throw new Error('Unauthorized. Please log in again.');
+                        }
+                        throw new Error(`Failed to fetch history: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    
+                    const summary = resData.commit_summary || 'No summary available.';
+                    const history = Array.isArray(resData.commit_history) ? resData.commit_history : [];
+
+                    // Format history timeline
+                    const itemsHtml = history.map(item => {
+                        const dateText = item.date || 'Unknown date';
+                        const author = item.author || 'Unknown';
+                        const msg = item.message || '';
+                        
+                        return `
+                        <div style="border-left: 2px solid var(--primary-color); padding-left: 15px; margin-bottom: 20px; position: relative;">
+                            <div style="position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color);"></div>
+                            <span style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">${dateText} &bull; <strong>${author}</strong></span>
+                            <span style="display: block; font-size: 15px; color: var(--text-main);">${msg}</span>
+                        </div>`;
+                    }).join('');
+
+                    resultsArea.innerHTML = `
+                        <h2>Commit History Summary</h2>
+                        <p style="text-align: justify; line-height: 1.7; font-size: 16px; margin-bottom: 30px; padding: 20px; background: var(--secondary-color); border-radius: 8px;">
+                            ${summary}
+                        </p>
+                        <h3>Recent Commits Timeline</h3>
+                        <div style="margin-top: 20px;">
+                            ${itemsHtml}
+                        </div>
+                    `;
+                    resultsArea.style.display = 'block';
+                    addPdfButton('LiveDoc_Commit_History');
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    resultsArea.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+                        <h3 style="margin: 0 0 5px;">Error Fetching Commits</h3>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>`;
+                    resultsArea.style.display = 'block';
+                } finally {
+                    analyzeBtn.disabled = false;
+                    loadingState.style.display = 'none';
+                    loadingState.querySelector('p').textContent = 'Analyzing codebase... This may take a minute.'; // Reset text
+                }
+            });
+
+            function renderMarkdownOutput(markdownString) {
+                function normalizeMermaidCode(input) {
+                    let text = String(input || '').replace(/\r\n/g, '\n').trim();
+
+                    // Remove accidental wrapper text the model may include inside code fences.
+                    text = text.replace(/^\s*mermaid\s*\n/i, '');
+                    text = text.replace(/^\s*```\s*(?:mermaid)?\s*/i, '');
+                    text = text.replace(/\s*```\s*$/i, '');
+
+                    // Normalize typographic unicode characters that often break Mermaid parsing.
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                     text = text
                         .replace(/[\u2018\u2019]/g, "'")
                         .replace(/[\u201C\u201D]/g, '"')
                         .replace(/[\u2013\u2014]/g, '-')
                         .replace(/\u2192/g, '-->');
 
+<<<<<<< HEAD
                     text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\s*([^\]]+)?\]/g, '$1["$2 $3"]');
                     text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\]/g, '$1["$2"]');
 
@@ -599,6 +1107,66 @@
                     } else { codeText = arguments[0]; language = arguments[1]; }
 
                     if (String(language || '').trim().toLowerCase().includes('mermaid')) {
+=======
+                    // Fix common LLM output mistakes: nested brackets in node labels (e.g. repoA[[frontend-repo] main.js]).
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\s*([^\]]+)?\]/g, '$1["$2 $3"]');
+                    text = text.replace(/([A-Za-z0-9_]+)\[\[([^\]]+)\]\]/g, '$1["$2"]');
+                    text = text.replace(/([A-Za-z0-9_]+)\[([^\]]+)\]/g, '$1["$2"]');
+                    text = text.replace(/\[\s*\[([^\]]+)\]\s*([^\]]+)?\]/g, '["$1 $2"]');
+                    text = text.replace(/\[\s*"?\[([^\]]+)\]"?\s*\]/g, '["$1"]');
+
+                    // Remove markdown artifacts or stray prose that sometimes leaks into Mermaid blocks.
+                    const cleanedLines = text
+                        .split('\n')
+                        .filter((line, index) => {
+                            const trimmed = line.trim();
+                            if (!trimmed) return true;
+                            if (index === 0) return true;
+                            if (/^#{1,6}\s/.test(trimmed)) return false;
+                            if (/^```/.test(trimmed)) return false;
+                            if (/^(title|caption|note)\s*[:=]/i.test(trimmed)) return false;
+                            return true;
+                        });
+
+                    text = cleanedLines.join('\n').trim();
+
+                    // Mermaid must start with a valid diagram declaration.
+                    const lines = text.split('\n');
+                    const diagramStartPattern = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|mindmap|timeline|gitGraph|quadrantChart|requirementDiagram|C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)\b/i;
+                    const startIndex = lines.findIndex(line => diagramStartPattern.test(line.trim()));
+                    if (startIndex > 0) {
+                        text = lines.slice(startIndex).join('\n').trim();
+                    }
+
+                    // Keep only supported diagram types and discard uncertain content.
+                    const firstLine = (text.split('\n')[0] || '').trim();
+                    if (!diagramStartPattern.test(firstLine)) {
+                        return '';
+                    }
+
+                    return text;
+                }
+
+                // Configure marked.js to intercept ```mermaid code blocks
+                const renderer = new marked.Renderer();
+                const originalCode = renderer.code.bind(renderer);
+
+                renderer.code = function () {
+                    let codeText = '';
+                    let language = '';
+
+                    // marked.js handles arguments differently across versions
+                    if (typeof arguments[0] === 'object' && arguments[0] !== null) {
+                        codeText = arguments[0].text;
+                        language = arguments[0].lang;
+                    } else {
+                        codeText = arguments[0];
+                        language = arguments[1];
+                    }
+
+                    const normalizedLanguage = String(language || '').trim().toLowerCase();
+                    if (normalizedLanguage.includes('mermaid')) {
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                         const encoded = encodeURIComponent(codeText || '');
                         return `<div class="mermaid-wrapper" style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; overflow-x: auto;">
                             <div class="mermaid-source" data-mermaid-source="${encoded}"></div>
@@ -609,6 +1177,7 @@
 
                 marked.use({ renderer });
 
+<<<<<<< HEAD
                 container.innerHTML = '';
                 container.appendChild(createHeaderControls('System Architecture Documentation', 'dashboard'));
 
@@ -641,6 +1210,26 @@
                             if (window.mermaid && window.mermaid.parse) {
                                 await window.mermaid.parse(safeCode);
                             }
+=======
+                resultsArea.innerHTML = marked.parse(markdownString);
+                resultsArea.style.display = 'block';
+
+                // Render mermaid diagrams with per-diagram isolation.
+                setTimeout(() => {
+                    const sourceNodes = document.querySelectorAll('.mermaid-source');
+                    sourceNodes.forEach(async (sourceNode, index) => {
+                        const wrapper = sourceNode.closest('.mermaid-wrapper');
+                        const rawCode = decodeURIComponent(sourceNode.dataset.mermaidSource || '');
+                        const safeCode = normalizeMermaidCode(rawCode) || `flowchart LR
+    user["User"] --> frontend["Frontend UI"]
+    frontend --> api["Backend API"]
+    api --> db["Database / Storage"]
+    api --> repo["GitHub Repository Data"]`;
+
+                        const diagramId = `mermaid-diagram-${Date.now()}-${index}`;
+
+                        try {
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                             const renderTarget = document.createElement('div');
                             renderTarget.className = 'mermaid-rendered';
                             const renderResult = await mermaid.render(diagramId, safeCode);
@@ -648,6 +1237,7 @@
                             wrapper.innerHTML = '';
                             wrapper.appendChild(renderTarget);
                         } catch (err) {
+<<<<<<< HEAD
                             console.warn('Mermaid rendering syntax variation handled gracefully:', err);
                             const cleanDisplay = safeCode.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                             wrapper.innerHTML = `
@@ -658,10 +1248,35 @@
                                     </div>
                                     <pre style="white-space: pre-wrap; margin: 0; background: white; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); color: #334155; font-family: monospace; font-size: 13px; line-height: 1.5;">${cleanDisplay}</pre>
                                 </div>`;
+=======
+                            console.error('Mermaid render error:', err);
+                            const fallbackCode = `flowchart LR
+    user["User"] --> frontend["Frontend UI"]
+    frontend --> api["Backend API"]
+    api --> db["Database / Storage"]
+    api --> repo["GitHub Repository Data"]`;
+
+                            try {
+                                const renderTarget = document.createElement('div');
+                                renderTarget.className = 'mermaid-rendered';
+                                const retryResult = await mermaid.render(`${diagramId}-fallback`, fallbackCode);
+                                renderTarget.innerHTML = retryResult.svg;
+                                wrapper.innerHTML = '';
+                                wrapper.appendChild(renderTarget);
+                            } catch {
+                                wrapper.innerHTML = `
+                                    <div style="background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                                        Diagram could not be rendered. Showing diagram source.
+                                    </div>
+                                    <pre style="white-space: pre-wrap; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto;">${fallbackCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                                `;
+                            }
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
                         }
                     });
                 }, 100);
             }
+<<<<<<< HEAD
 
             // --- 2. Isolated Architecture Drift Renderer (with Aligned Data Table) ---
             function renderArchitectureDiffView(diffData) {
@@ -904,6 +1519,8 @@
             // Initialize active section view
             const initialTab = APP_STATE.activeSection || 'dashboard';
             switchSection(initialTab);
+=======
+>>>>>>> 7a410c59179962b229cdf23a8de7ba340dfe60eb
         });
     </script>
 </body>
